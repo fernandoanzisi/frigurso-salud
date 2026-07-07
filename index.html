@@ -1,0 +1,1434 @@
+<!DOCTYPE html>
+<html lang="es">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, viewport-fit=cover">
+<title>Frigurso Salud</title>
+<link rel="manifest" href="manifest.json">
+<link rel="apple-touch-icon" href="icon-192.png">
+<meta name="theme-color" content="#061a14">
+<meta name="apple-mobile-web-app-capable" content="yes">
+<style>
+  :root{
+    --bg:#061a14;--bg2:#0a2b20;--bg3:#123d2e;--card:#0f2e22;
+    --text:#eef7f0;--text2:#a8c9ba;--text3:#5b8a72;
+    --accent:#10b981;--accent2:#0ea5e9;--gold:#f59e0b;
+    --green:#22c55e;--red:#f87171;--border:#1c4536;
+    --shadow:0 2px 16px rgba(0,0,0,.5);
+    --font:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;
+    --mono:'SF Mono','Fira Code',monospace;
+    --sab:env(safe-area-inset-bottom,0px);
+  }
+  *{box-sizing:border-box;margin:0;padding:0;-webkit-tap-highlight-color:transparent}
+  html,body{overscroll-behavior-y:contain}
+  body{font-family:var(--font);background:var(--bg);color:var(--text);min-height:100dvh}
+  button{font-family:var(--font);cursor:pointer;border:none;outline:none;background:none}
+  input,select,textarea{font-family:var(--font)}
+  ::-webkit-scrollbar{display:none}
+
+  .nav-bottom{position:fixed;bottom:0;left:0;right:0;z-index:100;background:var(--bg2);border-top:1px solid var(--border);display:flex;height:calc(58px + var(--sab));padding-bottom:var(--sab)}
+  .nav-btn{flex:1;display:flex;flex-direction:column;align-items:center;justify-content:center;gap:3px;color:var(--text3);font-size:10px;font-weight:600;text-transform:uppercase;letter-spacing:.5px}
+  .nav-btn .ni{font-size:22px}.nav-btn.active{color:var(--accent)}.nav-btn:active{opacity:.7}
+
+  .header{position:sticky;top:0;z-index:50;background:var(--bg2);border-bottom:1px solid var(--border);padding:14px 16px;display:flex;align-items:center;gap:10px}
+  .header-title{font-size:19px;font-weight:800;color:var(--text);flex:1}
+  .header-sub{font-size:11px;color:var(--text3)}
+  .btn-icon{width:38px;height:38px;border-radius:50%;background:var(--bg3);border:1px solid var(--border);color:var(--text2);font-size:17px;display:flex;align-items:center;justify-content:center;flex-shrink:0}
+
+  .page{display:none;padding-bottom:calc(78px + var(--sab))}.page.active{display:block}
+
+  .section{padding:14px 14px 0}
+  .section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
+  .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+
+  .hero{margin:14px;border-radius:22px;padding:22px 20px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 30px rgba(16,185,129,.3);position:relative;overflow:hidden}
+  .hero::after{content:'';position:absolute;top:-40%;right:-20%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08)}
+  .hero-lbl{font-size:11px;font-weight:700;color:rgba(255,255,255,.75);text-transform:uppercase;letter-spacing:1px}
+  .hero-val{font-size:30px;font-weight:900;color:#fff;font-family:var(--mono);margin-top:4px;line-height:1.1}
+  .hero-sub{font-size:12px;color:rgba(255,255,255,.7);margin-top:6px}
+
+  .kpi-grid{display:grid;grid-template-columns:repeat(2,1fr);gap:10px;padding:14px}
+  .kpi-box{background:var(--card);border:1px solid var(--border);border-radius:14px;padding:14px 12px;text-align:center}
+  .kpi-val{font-size:20px;font-weight:900;font-family:var(--mono)}
+  .kpi-lbl{font-size:10px;color:var(--text3);font-weight:700;text-transform:uppercase;letter-spacing:1px;margin-top:3px}
+
+  .row-item{display:flex;align-items:center;gap:12px;background:var(--card);border:1px solid var(--border);border-radius:14px;padding:12px 14px;margin-bottom:8px}
+  .row-item.static{cursor:default}
+  .row-icon{width:42px;height:42px;border-radius:12px;display:flex;align-items:center;justify-content:center;font-size:19px;flex-shrink:0}
+  .row-main{flex:1;min-width:0}
+  .row-title{font-size:14px;font-weight:700;color:var(--text);overflow:hidden;text-overflow:ellipsis;white-space:nowrap}
+  .row-sub{font-size:11px;color:var(--text3);margin-top:2px}
+  .row-amt{text-align:right;flex-shrink:0}
+  .row-amt-val{font-size:15px;font-weight:800;font-family:var(--mono)}
+  .row-amt-lbl{font-size:9px;color:var(--text3);margin-top:2px}
+  .row-amt-val.ok{color:var(--green)}
+  .row-amt-val.warn{color:var(--gold)}
+  .row-amt-val.bad{color:var(--red)}
+
+  .modal-overlay{position:fixed;inset:0;background:rgba(0,0,0,.75);z-index:200;display:flex;align-items:flex-end;justify-content:center;opacity:0;pointer-events:none;transition:opacity .2s}
+  .modal-overlay.open{opacity:1;pointer-events:all}
+  .modal{background:var(--bg2);border-radius:22px 22px 0 0;width:100%;max-width:520px;padding:20px 18px calc(30px + var(--sab));border-top:1px solid var(--border);transform:translateY(100%);transition:transform .25s;max-height:90dvh;overflow-y:auto}
+  .modal-overlay.open .modal{transform:translateY(0)}
+  .modal-title{font-size:17px;font-weight:800;color:var(--text);margin-bottom:16px}
+  .field-label{font-size:11px;font-weight:700;color:var(--text3);text-transform:uppercase;letter-spacing:1px;margin-bottom:5px}
+  .field-wrap{margin-bottom:14px}
+  .input{width:100%;padding:13px 14px;border-radius:12px;border:1px solid var(--border);background:var(--bg3);color:var(--text);font-size:15px}
+  .input:focus{outline:none;border-color:var(--accent)}
+  select.input option{background:var(--bg3);color:var(--text)}
+  .btn-primary{width:100%;padding:15px;border-radius:14px;background:var(--accent);color:#04211d;font-size:15px;font-weight:800;margin-bottom:8px}
+  .btn-secondary{width:100%;padding:13px;border-radius:14px;background:var(--bg3);color:var(--text);font-size:14px;font-weight:700;border:1px solid var(--border);margin-bottom:8px}
+  .btn-ghost{width:100%;padding:13px;border-radius:14px;border:1px solid var(--border);background:transparent;color:var(--text3);font-size:14px;font-weight:600;margin-bottom:8px}
+  .btn-danger{width:100%;padding:13px;border-radius:14px;background:rgba(248,113,113,.1);border:1px solid rgba(248,113,113,.3);color:var(--red);font-size:14px;font-weight:700;margin-bottom:8px}
+  .pill-sel{display:flex;flex-wrap:wrap;gap:6px;margin-top:4px}
+  .pill-row{display:flex;gap:8px;overflow-x:auto;padding-bottom:2px}
+  .pill{padding:8px 14px;border-radius:99px;font-size:12px;font-weight:600;border:1px solid var(--border);background:var(--bg3);color:var(--text2);cursor:pointer;white-space:nowrap;flex-shrink:0}
+  .pill.sel{background:rgba(16,185,129,.18);border-color:var(--accent);color:var(--accent);font-weight:700}
+
+  .fab{position:fixed;bottom:calc(68px + var(--sab));right:16px;z-index:80;width:56px;height:56px;border-radius:50%;background:var(--accent);color:#04211d;font-size:28px;box-shadow:0 4px 20px rgba(16,185,129,.45);display:flex;align-items:center;justify-content:center}
+
+  .toast{position:fixed;bottom:calc(75px + var(--sab));left:50%;transform:translateX(-50%) translateY(20px);background:var(--accent);color:#04211d;padding:10px 20px;border-radius:99px;font-size:13px;font-weight:700;opacity:0;transition:all .25s;z-index:9999;white-space:nowrap;pointer-events:none;max-width:88vw;overflow:hidden;text-overflow:ellipsis}
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  .empty{text-align:center;padding:50px 20px}
+  .empty-icon{font-size:52px;margin-bottom:12px}
+  .empty-text{font-size:15px;font-weight:700;color:var(--text);margin-bottom:6px}
+  .empty-sub{font-size:12px;color:var(--text3)}
+  .sep{height:1px;background:var(--border);margin:10px 0}
+
+  .auth-screen{position:fixed;inset:0;background:linear-gradient(160deg,var(--bg),#0a2b20 60%,#062b1e);z-index:500;display:flex;flex-direction:column;justify-content:center;padding:28px}
+  .auth-logo{font-size:52px;text-align:center;margin-bottom:6px}
+  .auth-title{font-size:24px;font-weight:900;text-align:center;color:var(--text);margin-bottom:6px}
+  .auth-sub{font-size:13px;text-align:center;color:var(--text3);margin-bottom:28px}
+  .auth-err{color:var(--red);font-size:12px;text-align:center;margin-bottom:10px;display:none}
+
+  .gps-canvas-wrap{background:var(--bg3);border-radius:14px;overflow:hidden;margin-bottom:10px}
+  .chart-canvas-wrap{background:var(--bg3);border-radius:14px;padding:8px;margin-bottom:10px}
+
+  #ptr-indicator{position:fixed;top:8px;left:50%;transform:translate(-50%,-40px);opacity:0;z-index:150;width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .25s,opacity .25s;pointer-events:none}
+</style>
+</head>
+<body>
+
+<!-- AUTH -->
+<div class="auth-screen" id="auth-screen">
+  <div class="auth-logo">🩺</div>
+  <div class="auth-title">Frigurso Salud</div>
+  <div class="auth-sub" id="auth-sub">Cargando...</div>
+
+  <div id="auth-crear" style="display:none">
+    <div class="field-wrap"><div class="field-label">Nombre</div><input type="text" class="input" id="ac-nombre" placeholder="Tu nombre"></div>
+    <div class="field-wrap"><div class="field-label">Contraseña</div><input type="password" class="input" id="ac-pass" placeholder="Mínimo 6 caracteres" autocomplete="new-password"></div>
+    <div class="field-wrap"><div class="field-label">Repetir contraseña</div><input type="password" class="input" id="ac-pass2" placeholder="Repetí la contraseña" autocomplete="new-password"></div>
+    <div class="auth-err" id="ac-err"></div>
+    <button class="btn-primary" onclick="crearCuenta()">Crear mi perfil</button>
+    <div style="font-size:11px;color:var(--text3);text-align:center;margin-top:8px;line-height:1.5">Tus datos de salud se guardan encriptados en este dispositivo. Si olvidás la contraseña, no hay forma de recuperarlos.</div>
+  </div>
+
+  <div id="auth-ingresar" style="display:none">
+    <div class="auth-sub" id="ai-nombre" style="margin-bottom:16px"></div>
+    <div class="field-wrap"><div class="field-label">Contraseña</div><input type="password" class="input" id="ai-pass" placeholder="Tu contraseña" autocomplete="current-password" onkeydown="if(event.key==='Enter')ingresar()"></div>
+    <div class="auth-err" id="ai-err"></div>
+    <button class="btn-primary" onclick="ingresar()">Ingresar</button>
+    <button class="btn-ghost" id="btn-huella-login" style="display:none" onclick="ingresarConHuella()">👆 Usar huella / Face ID</button>
+    <button class="btn-ghost" onclick="olvideContrasena()" style="color:var(--red)">Olvidé mi contraseña</button>
+  </div>
+</div>
+
+<!-- SPLASH DE BIENVENIDA -->
+<div id="splash-screen" style="display:none;position:fixed;inset:0;z-index:400;background:linear-gradient(180deg,var(--bg2) 0%,var(--bg) 100%);flex-direction:column;overflow:hidden">
+  <div style="position:absolute;top:0;left:0;right:0;height:48%;background:radial-gradient(ellipse 80% 60% at 50% 0%, rgba(16,185,129,.22) 0%, transparent 70%);pointer-events:none"></div>
+  <div style="text-align:center;padding:calc(26px + env(safe-area-inset-top,0px)) 26px 4px;position:relative">
+    <div style="font-size:26px;font-weight:900;color:var(--accent);letter-spacing:3px;line-height:1;text-shadow:0 0 40px rgba(16,185,129,.55)">FRIGURSO</div>
+    <div style="font-size:10px;font-weight:700;color:var(--text3);letter-spacing:1.3px;margin-top:5px;text-transform:uppercase">Salud · Deporte · Cuerpo · Nutrición</div>
+  </div>
+  <div style="padding:0 20px;flex:1;overflow-y:auto">
+    <div class="card" style="display:flex;align-items:flex-start;gap:13px;margin-top:18px">
+      <div style="font-size:32px;line-height:1">🩺</div>
+      <div>
+        <div style="font-size:17px;font-weight:800;color:var(--text)" id="splash-saludo">¡Bienvenido!</div>
+        <div style="font-size:12px;color:var(--accent);font-weight:700;margin-top:4px">Todo tu seguimiento de salud, en un solo lugar.</div>
+        <div style="font-size:11px;color:var(--text3);margin-top:3px;line-height:1.5">Deportes con GPS, presión, glucosa, peso, rutinas, comidas, turnos médicos y lugares cercanos — todo encriptado en tu teléfono.</div>
+      </div>
+    </div>
+  </div>
+  <div style="height:1px;margin:16px 20px;background:linear-gradient(90deg,transparent,var(--border),transparent)"></div>
+  <div style="padding:0 20px calc(28px + env(safe-area-inset-bottom,0px))">
+    <button class="btn-primary" style="font-size:17px;padding:16px" onclick="entrarDesdeSplash()">INGRESAR →</button>
+  </div>
+</div>
+
+<div id="ptr-indicator">⬇️</div>
+
+<nav class="nav-bottom" id="navbar" style="display:none">
+  <button class="nav-btn active" id="nav-home" onclick="navGo('home',this)"><span class="ni">🏠</span><span>Inicio</span></button>
+  <button class="nav-btn" id="nav-actividad" onclick="navGo('actividad',this)"><span class="ni">🏃</span><span>Actividad</span></button>
+  <button class="nav-btn" id="nav-cuerpo" onclick="navGo('cuerpo',this)"><span class="ni">❤️</span><span>Cuerpo</span></button>
+  <button class="nav-btn" id="nav-nutricion" onclick="navGo('nutricion',this)"><span class="ni">🍎</span><span>Nutrición</span></button>
+  <button class="nav-btn" id="nav-mas" onclick="navGo('mas',this)"><span class="ni">📋</span><span>Más</span></button>
+</nav>
+
+<!-- HOME -->
+<div class="page active" id="page-home">
+  <div class="header">
+    <div style="flex:1"><div class="header-title">🩺 Salud</div><div class="header-sub" id="home-sub">Hola</div></div>
+    <button class="btn-icon" onclick="navGo('mas',document.getElementById('nav-mas'))">☰</button>
+  </div>
+  <div class="hero">
+    <div class="hero-lbl">Esta semana</div>
+    <div class="hero-val" id="home-hero-val">0 sesiones</div>
+    <div class="hero-sub" id="home-hero-sub">0 min de actividad total</div>
+  </div>
+  <div class="kpi-grid" id="home-kpis"></div>
+  <div class="section"><div class="section-title">Próximos turnos médicos</div><div id="home-turnos"></div></div>
+  <div class="section" style="margin-top:14px"><div class="section-title">Últimas mediciones</div><div id="home-mediciones"></div></div>
+  <div class="section" style="margin-top:14px"><div class="section-title">Última actividad</div><div id="home-actividad"></div></div>
+</div>
+
+<!-- ACTIVIDAD -->
+<div class="page" id="page-actividad">
+  <div class="header"><div style="flex:1"><div class="header-title">🏃 Actividad</div><div class="header-sub" id="act-sub">Elegí un deporte</div></div></div>
+  <div class="section">
+    <input class="input" id="act-buscar" placeholder="🔎 Buscar deporte..." oninput="renderCatalogoDeportes()">
+  </div>
+  <div class="section pill-row" id="act-categorias" style="margin-top:10px"></div>
+  <div class="section" id="act-catalogo" style="margin-top:6px"></div>
+  <div class="section" style="margin-top:14px"><div class="section-title">Historial de sesiones</div><div id="act-historial"></div></div>
+</div>
+
+<!-- SESION EN CURSO (GPS) -->
+<div class="page" id="page-sesion-gps">
+  <div class="header">
+    <button class="btn-icon" onclick="cancelarSesionGPS()">✕</button>
+    <div style="flex:1"><div class="header-title" id="gps-deporte-nombre">Corriendo</div><div class="header-sub">Seguimiento en curso</div></div>
+  </div>
+  <div class="section">
+    <div class="gps-canvas-wrap"><canvas id="gps-canvas" width="600" height="320" style="width:100%;display:block"></canvas></div>
+    <div class="kpi-grid" style="padding:0;margin-bottom:14px">
+      <div class="kpi-box"><div class="kpi-val" id="gps-distancia">0.00 km</div><div class="kpi-lbl">Distancia</div></div>
+      <div class="kpi-box"><div class="kpi-val" id="gps-tiempo">00:00</div><div class="kpi-lbl">Tiempo</div></div>
+      <div class="kpi-box"><div class="kpi-val" id="gps-ritmo">—</div><div class="kpi-lbl">Ritmo (min/km)</div></div>
+      <div class="kpi-box"><div class="kpi-val" id="gps-puntos">0</div><div class="kpi-lbl">Puntos GPS</div></div>
+    </div>
+    <button class="btn-danger" onclick="finalizarSesionGPS()">⏹ Finalizar y guardar</button>
+  </div>
+</div>
+
+<!-- CUERPO (mediciones) -->
+<div class="page" id="page-cuerpo">
+  <div class="header"><div style="flex:1"><div class="header-title">❤️ Cuerpo</div><div class="header-sub">Peso, presión, glucosa y más</div></div></div>
+  <div class="section pill-row" id="cuerpo-tipos"></div>
+  <div class="section" style="margin-top:10px">
+    <div class="chart-canvas-wrap"><canvas id="cuerpo-chart" width="600" height="220" style="width:100%;display:block"></canvas></div>
+    <button class="btn-primary" onclick="abrirModalMedicion()">+ Registrar medición</button>
+  </div>
+  <div class="section" style="margin-top:6px"><div class="section-title">Historial</div><div id="cuerpo-historial"></div></div>
+  <div class="section" style="margin-top:10px"><div class="card" style="font-size:11px;color:var(--text3)">Los rangos de referencia mostrados son orientativos (guías generales de salud pública) y no reemplazan la opinión de un profesional médico.</div></div>
+</div>
+
+<!-- NUTRICION -->
+<div class="page" id="page-nutricion">
+  <div class="header"><div style="flex:1"><div class="header-title">🍎 Nutrición</div><div class="header-sub">Comidas, dietas e hidratación</div></div></div>
+  <div class="section">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:8px">💧 Hidratación de hoy</div>
+      <div style="display:flex;align-items:center;gap:14px">
+        <div style="font-size:26px;font-weight:900;font-family:var(--mono)" id="hidr-vasos">0/8</div>
+        <button class="btn-secondary" style="width:auto;padding:10px 16px;margin:0" onclick="agregarVasoAgua()">+ Vaso</button>
+        <button class="btn-ghost" style="width:auto;padding:10px 16px;margin:0" onclick="quitarVasoAgua()">−</button>
+      </div>
+    </div>
+  </div>
+  <div class="section">
+    <button class="btn-primary" onclick="abrirModalComida()">+ Registrar comida</button>
+  </div>
+  <div class="section" style="margin-top:6px"><div class="section-title">Comidas de hoy</div><div id="nutricion-comidas-hoy"></div></div>
+  <div class="section" style="margin-top:14px">
+    <div class="section-title">Planes / dietas</div>
+    <button class="btn-secondary" onclick="abrirModalDieta()">+ Crear plan</button>
+    <div id="nutricion-dietas" style="margin-top:8px"></div>
+  </div>
+  <div class="section" style="margin-top:14px"><div class="section-title">Historial de comidas</div><div id="nutricion-historial"></div></div>
+</div>
+
+<!-- RUTINAS -->
+<div class="page" id="page-rutinas">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('mas')">←</button>
+    <div style="flex:1"><div class="header-title">💪 Rutinas</div><div class="header-sub">Gimnasio y calistenia</div></div>
+  </div>
+  <div class="section"><button class="btn-primary" onclick="abrirModalRutina()">+ Crear rutina</button></div>
+  <div class="section" style="margin-top:6px" id="rutinas-lista"></div>
+</div>
+
+<!-- DETALLE DE RUTINA -->
+<div class="page" id="page-rutina-detalle">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('rutinas')">←</button>
+    <div style="flex:1"><div class="header-title" id="rd-titulo">Rutina</div><div class="header-sub" id="rd-sub">0 ejercicios</div></div>
+  </div>
+  <div class="section"><button class="btn-secondary" onclick="abrirModalEjercicio()">+ Agregar ejercicio</button></div>
+  <div class="section" style="margin-top:6px" id="rutina-detalle-ejercicios"></div>
+  <div class="section" style="margin-top:14px"><button class="btn-danger" onclick="borrarRutinaActual()">Eliminar esta rutina</button></div>
+</div>
+
+<!-- AGENDA -->
+<div class="page" id="page-agenda">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('mas')">←</button>
+    <div style="flex:1"><div class="header-title">📅 Agenda</div><div class="header-sub">Turnos médicos y avisos</div></div>
+  </div>
+  <div class="section"><button class="btn-primary" onclick="abrirModalTurno()">+ Turno médico</button></div>
+  <div class="section" style="margin-top:6px"><div class="section-title">Próximos turnos</div><div id="agenda-turnos"></div></div>
+  <div class="section" style="margin-top:14px">
+    <div class="section-title">Avisos y recordatorios</div>
+    <button class="btn-secondary" onclick="abrirModalAviso()">+ Crear aviso</button>
+    <div id="agenda-avisos" style="margin-top:8px"></div>
+  </div>
+</div>
+
+<!-- LUGARES CERCANOS -->
+<div class="page" id="page-lugares">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('mas')">←</button>
+    <div style="flex:1"><div class="header-title">📍 Lugares cercanos</div><div class="header-sub">Restoranes, YPF, cafés y más</div></div>
+  </div>
+  <div class="section pill-row" id="lugares-categorias"></div>
+  <div class="section" style="margin-top:10px"><button class="btn-primary" onclick="buscarLugaresCercanos()">🔎 Buscar cerca de mí</button></div>
+  <div class="section" style="margin-top:6px" id="lugares-resultados"></div>
+</div>
+
+<!-- MAS -->
+<div class="page" id="page-mas">
+  <div class="header"><div style="flex:1"><div class="header-title">📋 Más</div></div></div>
+  <div class="section">
+    <div class="row-item" onclick="navGo('rutinas')"><div class="row-icon" style="background:rgba(16,185,129,.15)">💪</div><div class="row-main"><div class="row-title">Rutinas</div><div class="row-sub">Gimnasio y calistenia</div></div></div>
+    <div class="row-item" onclick="navGo('agenda')"><div class="row-icon" style="background:rgba(14,165,233,.15)">📅</div><div class="row-main"><div class="row-title">Agenda</div><div class="row-sub" id="mas-agenda-sub">Turnos médicos y avisos</div></div></div>
+    <div class="row-item" onclick="navGo('lugares')"><div class="row-icon" style="background:rgba(245,158,11,.15)">📍</div><div class="row-main"><div class="row-title">Lugares cercanos</div><div class="row-sub">Restoranes, YPF, cafés, comida rápida</div></div></div>
+    <div class="row-item" onclick="abrirModalPerfil()"><div class="row-icon" style="background:rgba(168,85,247,.15)">👤</div><div class="row-main"><div class="row-title">Mi perfil</div><div class="row-sub">Nombre, edad, altura</div></div></div>
+    <div class="row-item" onclick="toggleHuella()"><div class="row-icon" style="background:rgba(16,185,129,.15)">👆</div><div class="row-main"><div class="row-title" id="huella-toggle-titulo">Activar huella / Face ID</div></div></div>
+    <div class="row-item" onclick="exportarBackup()"><div class="row-icon" style="background:rgba(34,197,94,.15)">📦</div><div class="row-main"><div class="row-title">Exportar backup</div><div class="row-sub">Guardar todo en un archivo encriptado</div></div></div>
+    <label class="row-item" style="display:flex">
+      <div class="row-icon" style="background:rgba(14,165,233,.15)">📥</div>
+      <div class="row-main"><div class="row-title">Importar backup</div><div class="row-sub">Restaurar desde un archivo .figsalud</div></div>
+      <input type="file" accept=".figsalud" style="display:none" onchange="importarBackup(event)">
+    </label>
+    <div class="row-item" onclick="cerrarSesion()"><div class="row-icon" style="background:rgba(248,113,113,.15)">🔒</div><div class="row-main"><div class="row-title">Cerrar sesión</div></div></div>
+  </div>
+</div>
+
+<!-- MODAL: SESION MANUAL (deportes sin GPS) -->
+<div class="modal-overlay" id="modal-sesion-manual" onclick="if(event.target===this)cerrarModal('sesion-manual')">
+  <div class="modal">
+    <div class="modal-title" id="sm-titulo">Registrar sesión</div>
+    <div class="field-wrap"><div class="field-label">Duración (minutos)</div><input type="number" class="input" id="sm-duracion" placeholder="Ej: 45"></div>
+    <div class="field-wrap"><div class="field-label">Notas (opcional)</div><input class="input" id="sm-notas" placeholder="Cómo te sentiste, detalles..."></div>
+    <button class="btn-primary" onclick="guardarSesionManual()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('sesion-manual')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: DETALLE DE SESION -->
+<div class="modal-overlay" id="modal-sesion-detalle" onclick="if(event.target===this)cerrarModal('sesion-detalle')">
+  <div class="modal">
+    <div class="modal-title" id="sd-titulo">Sesión</div>
+    <div id="sd-contenido"></div>
+    <button class="btn-danger" onclick="borrarSesionActual()">Eliminar sesión</button>
+    <button class="btn-ghost" onclick="cerrarModal('sesion-detalle')">Cerrar</button>
+  </div>
+</div>
+
+<!-- MODAL: MEDICION -->
+<div class="modal-overlay" id="modal-medicion" onclick="if(event.target===this)cerrarModal('medicion')">
+  <div class="modal">
+    <div class="modal-title" id="med-titulo">Registrar medición</div>
+    <div class="field-wrap" id="med-valor1-wrap"><div class="field-label" id="med-valor1-label">Valor</div><input type="number" step="0.1" class="input" id="med-valor1"></div>
+    <div class="field-wrap" id="med-valor2-wrap" style="display:none"><div class="field-label">Diastólica</div><input type="number" class="input" id="med-valor2"></div>
+    <div class="field-wrap"><div class="field-label">Fecha</div><input type="date" class="input" id="med-fecha"></div>
+    <div class="field-wrap"><div class="field-label">Notas (opcional)</div><input class="input" id="med-notas"></div>
+    <button class="btn-primary" onclick="guardarMedicion()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('medicion')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: COMIDA -->
+<div class="modal-overlay" id="modal-comida" onclick="if(event.target===this)cerrarModal('comida')">
+  <div class="modal">
+    <div class="modal-title">+ Registrar comida</div>
+    <div class="pill-sel" id="comida-tipo-pills"></div>
+    <div class="field-wrap" style="margin-top:12px"><div class="field-label">Descripción</div><input class="input" id="comida-desc" placeholder="Ej: Milanesa con ensalada"></div>
+    <div class="field-wrap"><div class="field-label">Calorías estimadas (opcional)</div><input type="number" class="input" id="comida-cal"></div>
+    <button class="btn-primary" onclick="guardarComida()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('comida')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: DIETA/PLAN -->
+<div class="modal-overlay" id="modal-dieta" onclick="if(event.target===this)cerrarModal('dieta')">
+  <div class="modal">
+    <div class="modal-title">+ Crear plan / dieta</div>
+    <div class="field-wrap"><div class="field-label">Nombre</div><input class="input" id="dieta-nombre" placeholder="Ej: Déficit calórico"></div>
+    <div class="field-wrap"><div class="field-label">Notas</div><input class="input" id="dieta-notas" placeholder="Detalles del plan"></div>
+    <button class="btn-primary" onclick="guardarDieta()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('dieta')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: RUTINA -->
+<div class="modal-overlay" id="modal-rutina" onclick="if(event.target===this)cerrarModal('rutina')">
+  <div class="modal">
+    <div class="modal-title">+ Crear rutina</div>
+    <div class="field-wrap"><div class="field-label">Nombre</div><input class="input" id="rutina-nombre" placeholder="Ej: Rutina de fuerza — Lunes/Miércoles/Viernes"></div>
+    <button class="btn-primary" onclick="guardarRutina()">Crear</button>
+    <button class="btn-ghost" onclick="cerrarModal('rutina')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: EJERCICIO -->
+<div class="modal-overlay" id="modal-ejercicio" onclick="if(event.target===this)cerrarModal('ejercicio')">
+  <div class="modal">
+    <div class="modal-title">+ Agregar ejercicio</div>
+    <div class="field-wrap"><div class="field-label">Nombre</div><input class="input" id="ej-nombre" placeholder="Ej: Sentadillas"></div>
+    <div class="field-wrap"><div class="field-label">Series</div><input type="number" class="input" id="ej-series" placeholder="Ej: 4"></div>
+    <div class="field-wrap"><div class="field-label">Repeticiones</div><input class="input" id="ej-reps" placeholder="Ej: 12 o 30 seg"></div>
+    <div class="field-wrap"><div class="field-label">Descanso (segundos)</div><input type="number" class="input" id="ej-descanso" placeholder="Ej: 60"></div>
+    <button class="btn-primary" onclick="guardarEjercicio()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('ejercicio')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: TURNO MEDICO -->
+<div class="modal-overlay" id="modal-turno" onclick="if(event.target===this)cerrarModal('turno')">
+  <div class="modal">
+    <div class="modal-title" id="turno-modal-titulo">+ Turno médico</div>
+    <div class="field-wrap"><div class="field-label">Especialidad</div><input class="input" id="turno-especialidad" placeholder="Ej: Clínico, Cardiólogo, Dentista"></div>
+    <div class="field-wrap"><div class="field-label">Médico (opcional)</div><input class="input" id="turno-medico"></div>
+    <div class="field-wrap"><div class="field-label">Fecha</div><input type="date" class="input" id="turno-fecha"></div>
+    <div class="field-wrap"><div class="field-label">Hora</div><input type="time" class="input" id="turno-hora"></div>
+    <div class="field-wrap"><div class="field-label">Lugar (opcional)</div><input class="input" id="turno-lugar"></div>
+    <div class="field-wrap"><div class="field-label">Notas</div><input class="input" id="turno-notas"></div>
+    <button class="btn-primary" onclick="guardarTurno()">Guardar</button>
+    <button class="btn-danger" id="btn-borrar-turno" style="display:none" onclick="borrarTurno()">Eliminar turno</button>
+    <button class="btn-ghost" onclick="cerrarModal('turno')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: AVISO -->
+<div class="modal-overlay" id="modal-aviso" onclick="if(event.target===this)cerrarModal('aviso')">
+  <div class="modal">
+    <div class="modal-title">+ Crear aviso</div>
+    <div class="field-wrap"><div class="field-label">Texto</div><input class="input" id="aviso-texto" placeholder="Ej: Tomar la pastilla, Estirar, Hidratarme"></div>
+    <div class="field-wrap"><div class="field-label">Hora</div><input type="time" class="input" id="aviso-hora"></div>
+    <button class="btn-primary" onclick="guardarAviso()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('aviso')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: PERFIL -->
+<div class="modal-overlay" id="modal-perfil" onclick="if(event.target===this)cerrarModal('perfil')">
+  <div class="modal">
+    <div class="modal-title">👤 Mi perfil</div>
+    <div class="field-wrap"><div class="field-label">Nombre</div><input class="input" id="perfil-nombre"></div>
+    <div class="field-wrap"><div class="field-label">Edad</div><input type="number" class="input" id="perfil-edad"></div>
+    <div class="field-wrap"><div class="field-label">Altura (cm)</div><input type="number" class="input" id="perfil-altura"></div>
+    <button class="btn-primary" onclick="guardarPerfil()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('perfil')">Cancelar</button>
+  </div>
+</div>
+
+<script>
+// ═══════════════════════════════════════════════════════════════
+// CRIPTO — AES-256-GCM + PBKDF2 (mismo esquema probado en Finanzas/Ingeniería)
+// ═══════════════════════════════════════════════════════════════
+function _bufToB64(buf){ return btoa(String.fromCharCode(...new Uint8Array(buf))); }
+function _b64ToBuf(b64){ const bin=atob(b64); const buf=new Uint8Array(bin.length); for(let i=0;i<bin.length;i++) buf[i]=bin.charCodeAt(i); return buf; }
+async function _deriveKey(pass, saltB64){
+  const salt=_b64ToBuf(saltB64);
+  const baseKey=await crypto.subtle.importKey('raw', new TextEncoder().encode(pass), 'PBKDF2', false, ['deriveKey']);
+  return crypto.subtle.deriveKey(
+    { name:'PBKDF2', salt, iterations:300000, hash:'SHA-256' },
+    baseKey, { name:'AES-GCM', length:256 }, true, ['encrypt','decrypt']
+  );
+}
+async function _encryptJSON(obj, key){
+  const iv=crypto.getRandomValues(new Uint8Array(12));
+  const data=new TextEncoder().encode(JSON.stringify(obj));
+  const cipher=await crypto.subtle.encrypt({name:'AES-GCM', iv}, key, data);
+  return { iv:_bufToB64(iv), data:_bufToB64(cipher) };
+}
+async function _decryptJSON(blob, key){
+  const iv=_b64ToBuf(blob.iv);
+  const data=_b64ToBuf(blob.data);
+  const plain=await crypto.subtle.decrypt({name:'AES-GCM', iv}, key, data);
+  return JSON.parse(new TextDecoder().decode(plain));
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AUTH — perfil único, encriptado (claves con prefijo figsalud_ para no
+// colisionar con otras apps de Frigurso que comparten el mismo origen)
+// ═══════════════════════════════════════════════════════════════
+let _key=null;
+let DB=null;
+let _fallidosPrevios=0;
+
+function _dbVacia(){
+  return {
+    perfil:{nombre:'', edad:null, altura:null},
+    sesiones:[],
+    mediciones:[],
+    comidas:[],
+    dietas:[],
+    hidratacion:{},
+    rutinas:[],
+    turnos:[],
+    avisos:[],
+    ultimoBackup:null,
+  };
+}
+async function save(){
+  if(!_key||!DB) return;
+  const blob=await _encryptJSON(DB, _key);
+  localStorage.setItem('figsalud_blob', JSON.stringify(blob));
+}
+function hideErrAuth(id){ document.getElementById(id).style.display='none'; }
+function showErrAuth(id,msg){ const el=document.getElementById(id); el.textContent=msg; el.style.display='block'; }
+
+function initAuth(){
+  const tieneBlob=!!localStorage.getItem('figsalud_blob');
+  document.getElementById('auth-crear').style.display='none';
+  document.getElementById('auth-ingresar').style.display='none';
+  if(!tieneBlob){
+    document.getElementById('auth-sub').textContent='Creá tu perfil para empezar';
+    document.getElementById('auth-crear').style.display='block';
+    return;
+  }
+  document.getElementById('auth-sub').textContent='Ingresá tu contraseña';
+  document.getElementById('ai-nombre').textContent=localStorage.getItem('figsalud_nombre')||'';
+  document.getElementById('auth-ingresar').style.display='block';
+  actualizarBotonHuella();
+}
+async function crearCuenta(){
+  hideErrAuth('ac-err');
+  const nombre=document.getElementById('ac-nombre').value.trim();
+  const pass=document.getElementById('ac-pass').value;
+  const pass2=document.getElementById('ac-pass2').value;
+  if(!nombre){ showErrAuth('ac-err','Ingresá tu nombre'); return; }
+  if(pass.length<6){ showErrAuth('ac-err','La contraseña debe tener al menos 6 caracteres'); return; }
+  if(pass!==pass2){ showErrAuth('ac-err','Las contraseñas no coinciden'); return; }
+  const salt=crypto.getRandomValues(new Uint8Array(16));
+  const saltB64=_bufToB64(salt);
+  const key=await _deriveKey(pass, saltB64);
+  DB=_dbVacia();
+  DB.perfil.nombre=nombre;
+  _key=key;
+  localStorage.setItem('figsalud_salt', saltB64);
+  localStorage.setItem('figsalud_nombre', nombre);
+  await save();
+  onDesbloqueado();
+}
+function _msEsperaPorIntentos(intentos){ if(intentos<3) return 0; return Math.min(30000, 1000*Math.pow(2,intentos-3)); }
+function _historialAcceso(){ try{ return JSON.parse(localStorage.getItem('figsalud_historial')||'[]'); }catch(e){ return []; } }
+function _registrarAcceso(tipo){
+  const hist=_historialAcceso();
+  hist.push({tipo,fecha:Date.now()});
+  localStorage.setItem('figsalud_historial', JSON.stringify(hist.slice(-30)));
+}
+function _contarFallidosDesdeUltimoExito(){
+  const hist=_historialAcceso();
+  let n=0;
+  for(let i=hist.length-1;i>=0;i--){ if(hist[i].tipo==='exito') break; n++; }
+  return n;
+}
+async function ingresar(){
+  hideErrAuth('ai-err');
+  const intentos=parseInt(localStorage.getItem('figsalud_intentos')||'0');
+  const espera=_msEsperaPorIntentos(intentos);
+  if(espera>0){ showErrAuth('ai-err','Demasiados intentos — esperá '+Math.ceil(espera/1000)+'s e intentá de nuevo'); return; }
+  const pass=document.getElementById('ai-pass').value;
+  if(!pass){ showErrAuth('ai-err','Ingresá tu contraseña'); return; }
+  try{
+    const saltB64=localStorage.getItem('figsalud_salt');
+    const key=await _deriveKey(pass, saltB64);
+    const blob=JSON.parse(localStorage.getItem('figsalud_blob'));
+    const data=await _decryptJSON(blob, key);
+    _key=key; DB=data;
+    localStorage.removeItem('figsalud_intentos');
+    _fallidosPrevios=_contarFallidosDesdeUltimoExito();
+    _registrarAcceso('exito');
+    onDesbloqueado();
+  }catch(e){
+    localStorage.setItem('figsalud_intentos', String(intentos+1));
+    _registrarAcceso('fallido');
+    showErrAuth('ai-err','Contraseña incorrecta');
+  }
+}
+async function registrarHuella(){
+  const challenge=crypto.getRandomValues(new Uint8Array(32));
+  return navigator.credentials.create({
+    publicKey:{
+      challenge,
+      rp:{name:'Frigurso Salud'},
+      user:{id:crypto.getRandomValues(new Uint8Array(16)), name:(DB.perfil.nombre||'usuario'), displayName:(DB.perfil.nombre||'Usuario')},
+      pubKeyCredParams:[{type:'public-key',alg:-7},{type:'public-key',alg:-257}],
+      authenticatorSelection:{authenticatorAttachment:'platform', userVerification:'required'},
+      timeout:60000,
+    }
+  });
+}
+async function verificarHuella(credIdB64){
+  const challenge=crypto.getRandomValues(new Uint8Array(32));
+  const credId=_b64ToBuf(credIdB64);
+  return navigator.credentials.get({ publicKey:{challenge, allowCredentials:[{id:credId,type:'public-key'}], userVerification:'required', timeout:60000} });
+}
+async function toggleHuella(){
+  if(localStorage.getItem('figsalud_passkey')){
+    if(!confirm('¿Desactivar el acceso por huella en este dispositivo?')) return;
+    localStorage.removeItem('figsalud_passkey');
+    localStorage.removeItem('figsalud_unlock_shortcut');
+    actualizarBotonHuella();
+    toast('Huella desactivada');
+    return;
+  }
+  if(!window.PublicKeyCredential){ toast('Este dispositivo no soporta huella/Face ID'); return; }
+  try{
+    const cred=await registrarHuella();
+    const credIdB64=_bufToB64(new Uint8Array(cred.rawId));
+    const rawKey=await crypto.subtle.exportKey('raw', _key);
+    localStorage.setItem('figsalud_passkey', credIdB64);
+    localStorage.setItem('figsalud_unlock_shortcut', _bufToB64(new Uint8Array(rawKey)));
+    actualizarBotonHuella();
+    toast('👆 Huella activada');
+  }catch(e){ toast('No se pudo activar la huella'); }
+}
+async function ingresarConHuella(){
+  const credId=localStorage.getItem('figsalud_passkey');
+  if(!credId) return;
+  try{
+    await verificarHuella(credId);
+    const rawKeyB64=localStorage.getItem('figsalud_unlock_shortcut');
+    const rawKey=_b64ToBuf(rawKeyB64);
+    _key=await crypto.subtle.importKey('raw', rawKey, {name:'AES-GCM'}, true, ['encrypt','decrypt']);
+    const blob=JSON.parse(localStorage.getItem('figsalud_blob'));
+    DB=await _decryptJSON(blob, _key);
+    _fallidosPrevios=_contarFallidosDesdeUltimoExito();
+    _registrarAcceso('exito');
+    onDesbloqueado();
+  }catch(e){ _registrarAcceso('fallido'); toast('No se pudo verificar la huella'); }
+}
+function actualizarBotonHuella(){
+  const activo=!!localStorage.getItem('figsalud_passkey');
+  const t=document.getElementById('huella-toggle-titulo');
+  if(t) t.textContent=activo?'Desactivar huella / Face ID':'Activar huella / Face ID';
+  const btn=document.getElementById('btn-huella-login');
+  if(btn) btn.style.display=activo?'':'none';
+}
+function olvideContrasena(){
+  if(!confirm('Si olvidaste tu contraseña no hay forma de recuperar tus datos. ¿Querés borrar todo y empezar de nuevo?')) return;
+  ['figsalud_blob','figsalud_salt','figsalud_nombre','figsalud_passkey','figsalud_unlock_shortcut','figsalud_intentos'].forEach(k=>localStorage.removeItem(k));
+  toast('Se borraron los datos — creá un perfil nuevo');
+  initAuth();
+}
+function cerrarSesion(){
+  _key=null; DB=null;
+  document.getElementById('navbar').style.display='none';
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  document.getElementById('page-home').classList.add('active');
+  document.getElementById('ai-pass').value='';
+  initAuth();
+  document.getElementById('auth-screen').style.display='flex';
+}
+function onDesbloqueado(){
+  document.getElementById('auth-screen').style.display='none';
+  mostrarSplashBienvenida();
+}
+function mostrarSplashBienvenida(){
+  const nombre=(DB.perfil&&DB.perfil.nombre)||'';
+  document.getElementById('splash-saludo').textContent=nombre?('¡Bienvenido, '+nombre+'!'):'¡Bienvenido!';
+  document.getElementById('splash-screen').style.display='flex';
+  _fallidosPrevios=0;
+}
+function entrarDesdeSplash(){
+  document.getElementById('splash-screen').style.display='none';
+  document.getElementById('navbar').style.display='flex';
+  actualizarBotonHuella();
+  renderHome();
+  history.replaceState({page:'home'},'','');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// UTILS
+// ═══════════════════════════════════════════════════════════════
+function uid(){ return Date.now().toString(36)+Math.random().toString(36).slice(2,6); }
+function esc(s){ return String(s==null?'':s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
+let _toastT;
+function toast(msg){ const el=document.getElementById('toast'); el.textContent=msg; el.classList.add('show'); clearTimeout(_toastT); _toastT=setTimeout(()=>el.classList.remove('show'),2600); }
+function fechaHoy(){ const n=new Date(); return n.getFullYear()+'-'+String(n.getMonth()+1).padStart(2,'0')+'-'+String(n.getDate()).padStart(2,'0'); }
+function fmtFecha(s){ if(!s) return ''; const [y,m,d]=s.split('-'); return d+'/'+m+'/'+y; }
+function fmtFechaHora(ts){ const d=new Date(ts); return String(d.getDate()).padStart(2,'0')+'/'+String(d.getMonth()+1).padStart(2,'0')+' '+String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+function _haversine(lat1,lon1,lat2,lon2){
+  const R=6371;
+  const dLat=(lat2-lat1)*Math.PI/180, dLon=(lon2-lon1)*Math.PI/180;
+  const a=Math.sin(dLat/2)**2 + Math.cos(lat1*Math.PI/180)*Math.cos(lat2*Math.PI/180)*Math.sin(dLon/2)**2;
+  return R*2*Math.atan2(Math.sqrt(a),Math.sqrt(1-a));
+}
+function _haversineM(lat1,lon1,lat2,lon2){ return _haversine(lat1,lon1,lat2,lon2)*1000; }
+
+// ═══════════════════════════════════════════════════════════════
+// NAVEGACION + HISTORY API
+// ═══════════════════════════════════════════════════════════════
+let _pagActual='home';
+let _poppingState=false;
+const PAGE_RENDER_FN={
+  home:renderHome, actividad:renderActividad, cuerpo:renderCuerpo, nutricion:renderNutricion,
+  mas:renderMas, rutinas:renderRutinas, 'rutina-detalle':renderRutinaDetalle,
+  agenda:renderAgenda, lugares:renderLugares, 'sesion-gps':()=>{},
+};
+function navGo(page,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
+  const target=document.getElementById('page-'+page);
+  if(target) target.classList.add('active');
+  document.querySelectorAll('.nav-btn').forEach(b=>b.classList.remove('active'));
+  const navBtn=btn||document.getElementById('nav-'+page);
+  if(navBtn && navBtn.classList) navBtn.classList.add('active');
+  _pagActual=page;
+  const fn=PAGE_RENDER_FN[page];
+  if(fn) fn();
+  window.scrollTo(0,0);
+  if(!_poppingState && page!=='home') history.pushState({page},'','');
+}
+function abrirModal(id){ document.getElementById('modal-'+id).classList.add('open'); if(!_poppingState) history.pushState({modal:id},'',''); }
+function cerrarModal(id){ document.getElementById('modal-'+id).classList.remove('open'); if(!_poppingState) history.back(); }
+window.addEventListener('popstate', e=>{
+  _poppingState=true;
+  const openModal=document.querySelector('.modal-overlay.open');
+  if(openModal){ openModal.classList.remove('open'); }
+  else if(!e.state || e.state.page==='home'){ if(_pagActual!=='home') navGo('home', document.getElementById('nav-home')); }
+  else if(e.state.page && e.state.page!==_pagActual){ navGo(e.state.page, document.getElementById('nav-'+e.state.page)); }
+  _poppingState=false;
+});
+function renderMas(){
+  const turnosProx=(DB.turnos||[]).filter(t=>t.fecha>=fechaHoy()).length;
+  const sub=document.getElementById('mas-agenda-sub');
+  if(sub) sub.textContent = turnosProx? turnosProx+' turno'+(turnosProx!==1?'s':'')+' próximo'+(turnosProx!==1?'s':'') : 'Turnos médicos y avisos';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// HOME
+// ═══════════════════════════════════════════════════════════════
+function renderHome(){
+  document.getElementById('home-sub').textContent=DB.perfil.nombre?('Hola, '+DB.perfil.nombre):'Hola';
+  const haceUnaSemana=Date.now()-7*24*60*60*1000;
+  const sesionesSemana=(DB.sesiones||[]).filter(s=>s.fecha>=haceUnaSemana);
+  const minutosSemana=sesionesSemana.reduce((s,x)=>s+x.duracionMin,0);
+  document.getElementById('home-hero-val').textContent=sesionesSemana.length+' sesion'+(sesionesSemana.length!==1?'es':'');
+  document.getElementById('home-hero-sub').textContent=Math.round(minutosSemana)+' min de actividad total';
+
+  document.getElementById('home-kpis').innerHTML=
+    '<div class="kpi-box"><div class="kpi-val">'+(DB.sesiones||[]).length+'</div><div class="kpi-lbl">Sesiones totales</div></div>'+
+    '<div class="kpi-box"><div class="kpi-val">'+(DB.mediciones||[]).length+'</div><div class="kpi-lbl">Mediciones</div></div>'+
+    '<div class="kpi-box"><div class="kpi-val">'+(DB.turnos||[]).filter(t=>t.fecha>=fechaHoy()).length+'</div><div class="kpi-lbl">Turnos próximos</div></div>'+
+    '<div class="kpi-box"><div class="kpi-val">'+(DB.rutinas||[]).length+'</div><div class="kpi-lbl">Rutinas</div></div>';
+
+  const turnosProximos=[...(DB.turnos||[])].filter(t=>t.fecha>=fechaHoy()).sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora)).slice(0,3);
+  document.getElementById('home-turnos').innerHTML=turnosProximos.length? turnosProximos.map(turnoRowHtml).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Sin turnos próximos</div></div>';
+
+  const medicionesRecientes=[...(DB.mediciones||[])].sort((a,b)=>b.fecha-a.fecha).slice(0,3);
+  document.getElementById('home-mediciones').innerHTML=medicionesRecientes.length? medicionesRecientes.map(medicionRowHtml).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Sin mediciones registradas</div></div>';
+
+  const actividadReciente=[...(DB.sesiones||[])].sort((a,b)=>b.fecha-a.fecha).slice(0,3);
+  document.getElementById('home-actividad').innerHTML=actividadReciente.length? actividadReciente.map(sesionRowHtml).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Sin actividad registrada</div></div>';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ACTIVIDAD — catálogo de deportes + sesiones (con GPS opcional)
+// ═══════════════════════════════════════════════════════════════
+const DEPORTES=[
+  {id:'correr', nombre:'Correr', categoria:'Cardio', icono:'🏃', gps:true},
+  {id:'caminata', nombre:'Caminata', categoria:'Cardio', icono:'🚶', gps:true},
+  {id:'trote', nombre:'Trote suave', categoria:'Cardio', icono:'🏃‍♂️', gps:true},
+  {id:'ciclismo', nombre:'Ciclismo', categoria:'Cardio', icono:'🚴', gps:true},
+  {id:'ciclismo_montana', nombre:'Ciclismo de montaña', categoria:'Cardio', icono:'🚵', gps:true},
+  {id:'trekking', nombre:'Senderismo / Trekking', categoria:'Cardio', icono:'🥾', gps:true},
+  {id:'eliptico', nombre:'Elíptico', categoria:'Cardio', icono:'🏋️', gps:false},
+  {id:'patines', nombre:'Patín / Rollers / Skate', categoria:'Cardio', icono:'🛼', gps:true},
+  {id:'gimnasio', nombre:'Musculación / Gimnasio', categoria:'Fuerza', icono:'🏋️‍♂️', gps:false},
+  {id:'calistenia', nombre:'Calistenia', categoria:'Fuerza', icono:'🤸', gps:false},
+  {id:'crossfit', nombre:'CrossFit', categoria:'Fuerza', icono:'🏋️', gps:false},
+  {id:'funcional', nombre:'Entrenamiento funcional', categoria:'Fuerza', icono:'💪', gps:false},
+  {id:'yoga', nombre:'Yoga', categoria:'Mente y cuerpo', icono:'🧘', gps:false},
+  {id:'pilates', nombre:'Pilates', categoria:'Mente y cuerpo', icono:'🧘‍♀️', gps:false},
+  {id:'stretching', nombre:'Stretching / Elongación', categoria:'Mente y cuerpo', icono:'🤸‍♀️', gps:false},
+  {id:'taichi', nombre:'Tai Chi', categoria:'Mente y cuerpo', icono:'☯️', gps:false},
+  {id:'tenis', nombre:'Tenis', categoria:'Raqueta y precisión', icono:'🎾', gps:false},
+  {id:'padel', nombre:'Pádel', categoria:'Raqueta y precisión', icono:'🎾', gps:false},
+  {id:'golf', nombre:'Golf', categoria:'Raqueta y precisión', icono:'⛳', gps:true},
+  {id:'footgolf', nombre:'FootGolf', categoria:'Raqueta y precisión', icono:'⚽', gps:true},
+  {id:'squash', nombre:'Squash', categoria:'Raqueta y precisión', icono:'🎾', gps:false},
+  {id:'ping_pong', nombre:'Tenis de mesa', categoria:'Raqueta y precisión', icono:'🏓', gps:false},
+  {id:'badminton', nombre:'Bádminton', categoria:'Raqueta y precisión', icono:'🏸', gps:false},
+  {id:'futbol', nombre:'Fútbol', categoria:'Equipo', icono:'⚽', gps:false},
+  {id:'futbol5', nombre:'Fútbol 5', categoria:'Equipo', icono:'⚽', gps:false},
+  {id:'basquet', nombre:'Básquet', categoria:'Equipo', icono:'🏀', gps:false},
+  {id:'voley', nombre:'Vóley', categoria:'Equipo', icono:'🏐', gps:false},
+  {id:'rugby', nombre:'Rugby', categoria:'Equipo', icono:'🏉', gps:false},
+  {id:'hockey', nombre:'Hockey', categoria:'Equipo', icono:'🏑', gps:false},
+  {id:'beisbol', nombre:'Béisbol', categoria:'Equipo', icono:'⚾', gps:false},
+  {id:'handball', nombre:'Handball', categoria:'Equipo', icono:'🤾', gps:false},
+  {id:'boxeo', nombre:'Boxeo', categoria:'Combate', icono:'🥊', gps:false},
+  {id:'kickboxing', nombre:'Kickboxing', categoria:'Combate', icono:'🥋', gps:false},
+  {id:'artes_marciales', nombre:'Artes marciales', categoria:'Combate', icono:'🥋', gps:false},
+  {id:'lucha', nombre:'Lucha', categoria:'Combate', icono:'🤼', gps:false},
+  {id:'natacion', nombre:'Natación', categoria:'Acuáticos', icono:'🏊', gps:false},
+  {id:'surf', nombre:'Surf', categoria:'Acuáticos', icono:'🏄', gps:false},
+  {id:'kayak', nombre:'Kayak / Remo', categoria:'Acuáticos', icono:'🛶', gps:true},
+  {id:'buceo', nombre:'Buceo', categoria:'Acuáticos', icono:'🤿', gps:false},
+  {id:'escalada', nombre:'Escalada', categoria:'Montaña y aventura', icono:'🧗', gps:false},
+  {id:'esqui', nombre:'Esquí', categoria:'Montaña y aventura', icono:'⛷️', gps:false},
+  {id:'snowboard', nombre:'Snowboard', categoria:'Montaña y aventura', icono:'🏂', gps:false},
+  {id:'baile', nombre:'Baile / Danza', categoria:'Otros', icono:'💃', gps:false},
+  {id:'equitacion', nombre:'Equitación', categoria:'Otros', icono:'🐎', gps:false},
+  {id:'esgrima', nombre:'Esgrima', categoria:'Otros', icono:'🤺', gps:false},
+  {id:'tiro_arco', nombre:'Tiro con arco', categoria:'Otros', icono:'🏹', gps:false},
+];
+let _categoriaActividadSel='todas';
+function renderCategoriasActividad(){
+  const categorias=['todas', ...new Set(DEPORTES.map(d=>d.categoria))];
+  document.getElementById('act-categorias').innerHTML=categorias.map(c=>
+    '<button class="pill '+(c===_categoriaActividadSel?'sel':'')+'" onclick="cambiarCategoriaActividad(\''+c+'\')">'+(c==='todas'?'Todas':c)+'</button>'
+  ).join('');
+}
+function cambiarCategoriaActividad(c){ _categoriaActividadSel=c; renderCategoriasActividad(); renderCatalogoDeportes(); }
+function renderCatalogoDeportes(){
+  const q=(document.getElementById('act-buscar').value||'').toLowerCase().trim();
+  let lista=DEPORTES.filter(d=> (_categoriaActividadSel==='todas'||d.categoria===_categoriaActividadSel) && (!q||d.nombre.toLowerCase().includes(q)) );
+  document.getElementById('act-catalogo').innerHTML=lista.map(d=>
+    '<div class="row-item" onclick="iniciarSesionDeporte(\''+d.id+'\')">'+
+      '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+d.icono+'</div>'+
+      '<div class="row-main"><div class="row-title">'+esc(d.nombre)+'</div><div class="row-sub">'+esc(d.categoria)+(d.gps?' · con GPS':'')+'</div></div>'+
+    '</div>'
+  ).join('');
+}
+function sesionRowHtml(s){
+  const dep=DEPORTES.find(d=>d.id===s.deporteId);
+  return '<div class="row-item" onclick="abrirDetalleSesion(\''+s.id+'\')">'+
+    '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+(dep?dep.icono:'🏃')+'</div>'+
+    '<div class="row-main"><div class="row-title">'+esc(s.deporteNombre)+'</div><div class="row-sub">'+fmtFechaHora(s.fecha)+' · '+Math.round(s.duracionMin)+' min'+(s.distanciaKm?' · '+s.distanciaKm+' km':'')+'</div></div>'+
+  '</div>';
+}
+function renderActividad(){
+  renderCategoriasActividad();
+  renderCatalogoDeportes();
+  const sesiones=[...(DB.sesiones||[])].sort((a,b)=>b.fecha-a.fecha);
+  document.getElementById('act-sub').textContent=sesiones.length+' sesión'+(sesiones.length!==1?'es':'')+' registrada'+(sesiones.length!==1?'s':'');
+  document.getElementById('act-historial').innerHTML=sesiones.length? sesiones.slice(0,20).map(sesionRowHtml).join('') : '<div class="empty"><div class="empty-icon">🏃</div><div class="empty-text">Todavía no registraste ninguna sesión</div></div>';
+}
+let _deporteManualActual=null;
+function iniciarSesionDeporte(deporteId){
+  const deporte=DEPORTES.find(d=>d.id===deporteId);
+  if(!deporte) return;
+  if(deporte.gps) iniciarSesionGPS(deporte);
+  else abrirModalSesionManual(deporte);
+}
+function abrirModalSesionManual(deporte){
+  _deporteManualActual=deporte;
+  document.getElementById('sm-titulo').textContent='Registrar '+deporte.nombre;
+  document.getElementById('sm-duracion').value='';
+  document.getElementById('sm-notas').value='';
+  abrirModal('sesion-manual');
+}
+async function guardarSesionManual(){
+  const duracion=parseFloat(document.getElementById('sm-duracion').value);
+  if(!duracion||duracion<=0){ toast('⚠️ Ingresá una duración válida'); return; }
+  const notas=(document.getElementById('sm-notas').value||'').trim();
+  const sesion={id:uid(), deporteId:_deporteManualActual.id, deporteNombre:_deporteManualActual.nombre, fecha:Date.now(), duracionMin:duracion, distanciaKm:null, ruta:null, notas};
+  if(!DB.sesiones) DB.sesiones=[];
+  DB.sesiones.push(sesion);
+  await save();
+  cerrarModal('sesion-manual');
+  renderActividad();
+  if(_pagActual==='home') renderHome();
+  toast('✅ Sesión guardada');
+}
+
+// ── GPS ──
+let _gpsWatchId=null, _gpsPuntos=[], _gpsInicio=null, _gpsDeporteActual=null, _gpsTimerInterval=null;
+function iniciarSesionGPS(deporte){
+  if(!navigator.geolocation){ toast('⚠️ Este dispositivo no tiene GPS disponible'); return; }
+  _gpsDeporteActual=deporte;
+  _gpsPuntos=[];
+  _gpsInicio=Date.now();
+  document.getElementById('gps-deporte-nombre').textContent=deporte.nombre;
+  navGo('sesion-gps');
+  actualizarStatsGPS();
+  dibujarRutaGPS();
+  _gpsTimerInterval=setInterval(actualizarStatsGPS, 1000);
+  _gpsWatchId=navigator.geolocation.watchPosition(_onGPSPosicion, _onGPSError, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
+}
+function _onGPSPosicion(pos){
+  _gpsPuntos.push({lat:pos.coords.latitude, lon:pos.coords.longitude, t:Date.now()});
+  actualizarStatsGPS();
+  dibujarRutaGPS();
+}
+function _onGPSError(err){ console.warn('Error de GPS', err); }
+function _distanciaTotalGPS(puntos){
+  let total=0;
+  for(let i=1;i<puntos.length;i++) total += _haversine(puntos[i-1].lat,puntos[i-1].lon,puntos[i].lat,puntos[i].lon);
+  return total;
+}
+function actualizarStatsGPS(){
+  const distKm=_distanciaTotalGPS(_gpsPuntos);
+  const segTranscurridos=(Date.now()-_gpsInicio)/1000;
+  const min=Math.floor(segTranscurridos/60), seg=Math.floor(segTranscurridos%60);
+  document.getElementById('gps-distancia').textContent=distKm.toFixed(2)+' km';
+  document.getElementById('gps-tiempo').textContent=String(min).padStart(2,'0')+':'+String(seg).padStart(2,'0');
+  document.getElementById('gps-puntos').textContent=_gpsPuntos.length;
+  const ritmo = distKm>0.01 ? (segTranscurridos/60)/distKm : null;
+  document.getElementById('gps-ritmo').textContent = ritmo ? ritmo.toFixed(2)+' min/km' : '—';
+}
+function dibujarRutaGPS(){
+  const canvas=document.getElementById('gps-canvas');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(_gpsPuntos.length<2) return;
+  const lats=_gpsPuntos.map(p=>p.lat), lons=_gpsPuntos.map(p=>p.lon);
+  const minLat=Math.min(...lats), maxLat=Math.max(...lats), minLon=Math.min(...lons), maxLon=Math.max(...lons);
+  const pad=20, w=canvas.width-2*pad, h=canvas.height-2*pad;
+  const rangoLat=(maxLat-minLat)||0.0001, rangoLon=(maxLon-minLon)||0.0001;
+  function proyectar(p){ return [pad+((p.lon-minLon)/rangoLon)*w, pad+h-((p.lat-minLat)/rangoLat)*h]; }
+  ctx.strokeStyle='#10b981'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
+  ctx.beginPath();
+  _gpsPuntos.forEach((p,i)=>{ const [x,y]=proyectar(p); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  ctx.stroke();
+  const [x0,y0]=proyectar(_gpsPuntos[0]);
+  ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(x0,y0,6,0,Math.PI*2); ctx.fill();
+  const [xn,yn]=proyectar(_gpsPuntos[_gpsPuntos.length-1]);
+  ctx.fillStyle='#f87171'; ctx.beginPath(); ctx.arc(xn,yn,6,0,Math.PI*2); ctx.fill();
+}
+async function finalizarSesionGPS(){
+  clearInterval(_gpsTimerInterval);
+  if(_gpsWatchId!=null) navigator.geolocation.clearWatch(_gpsWatchId);
+  const distKm=_distanciaTotalGPS(_gpsPuntos);
+  const segTranscurridos=(Date.now()-_gpsInicio)/1000;
+  const duracionMin=segTranscurridos/60;
+  const sesion={id:uid(), deporteId:_gpsDeporteActual.id, deporteNombre:_gpsDeporteActual.nombre, fecha:_gpsInicio, duracionMin:Math.round(duracionMin*10)/10, distanciaKm:Math.round(distKm*100)/100, ruta:_gpsPuntos.slice(), notas:''};
+  if(!DB.sesiones) DB.sesiones=[];
+  DB.sesiones.push(sesion);
+  await save();
+  navGo('actividad');
+  toast('✅ Sesión guardada: '+sesion.distanciaKm+' km');
+}
+function cancelarSesionGPS(){
+  if(!confirm('¿Cancelar esta sesión sin guardarla?')) return;
+  clearInterval(_gpsTimerInterval);
+  if(_gpsWatchId!=null) navigator.geolocation.clearWatch(_gpsWatchId);
+  navGo('actividad');
+}
+let _sesionDetalleId=null;
+function abrirDetalleSesion(id){
+  const s=(DB.sesiones||[]).find(x=>x.id===id);
+  if(!s) return;
+  _sesionDetalleId=id;
+  document.getElementById('sd-titulo').textContent=s.deporteNombre;
+  let html='<div class="kpi-grid" style="padding:0">'+
+    '<div class="kpi-box"><div class="kpi-val">'+Math.round(s.duracionMin)+' min</div><div class="kpi-lbl">Duración</div></div>'+
+    (s.distanciaKm?'<div class="kpi-box"><div class="kpi-val">'+s.distanciaKm+' km</div><div class="kpi-lbl">Distancia</div></div>':'')+
+  '</div>';
+  if(s.notas) html+='<div class="card">'+esc(s.notas)+'</div>';
+  document.getElementById('sd-contenido').innerHTML=html;
+  abrirModal('sesion-detalle');
+}
+async function borrarSesionActual(){
+  if(!confirm('¿Eliminar esta sesión?')) return;
+  DB.sesiones=(DB.sesiones||[]).filter(s=>s.id!==_sesionDetalleId);
+  await save();
+  cerrarModal('sesion-detalle');
+  renderActividad();
+  if(_pagActual==='home') renderHome();
+  toast('🗑 Eliminada');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CUERPO — mediciones (peso, presión, glucosa, temperatura, pulso)
+// ═══════════════════════════════════════════════════════════════
+const MEDICION_TIPOS={
+  peso:{nombre:'Peso',unidad:'kg',icono:'⚖️',doble:false},
+  presion:{nombre:'Presión',unidad:'mmHg',icono:'❤️',doble:true},
+  glucosa:{nombre:'Glucosa',unidad:'mg/dL',icono:'🩸',doble:false},
+  temperatura:{nombre:'Temperatura',unidad:'°C',icono:'🌡️',doble:false},
+  pulso:{nombre:'Pulso',unidad:'lpm',icono:'💓',doble:false},
+};
+let _tipoMedicionSel='peso';
+function clasificarMedicion(tipo,v1,v2){
+  if(tipo==='presion'){
+    if(v1==null||v2==null) return null;
+    if(v1<120&&v2<80) return 'ok';
+    if(v1<130&&v2<80) return 'warn';
+    if(v1<140||v2<90) return 'warn';
+    return 'bad';
+  }
+  if(tipo==='glucosa'){ if(v1<100) return 'ok'; if(v1<126) return 'warn'; return 'bad'; }
+  if(tipo==='temperatura'){ if(v1<37.3) return 'ok'; if(v1<38) return 'warn'; return 'bad'; }
+  if(tipo==='pulso'){ if(v1>=60&&v1<=100) return 'ok'; if((v1>=50&&v1<60)||(v1>100&&v1<=120)) return 'warn'; return 'bad'; }
+  return null;
+}
+function cambiarTipoMedicion(t){ _tipoMedicionSel=t; renderCuerpo(); }
+function renderTiposMedicionPills(){
+  document.getElementById('cuerpo-tipos').innerHTML=Object.keys(MEDICION_TIPOS).map(t=>
+    '<button class="pill '+(t===_tipoMedicionSel?'sel':'')+'" onclick="cambiarTipoMedicion(\''+t+'\')">'+MEDICION_TIPOS[t].icono+' '+MEDICION_TIPOS[t].nombre+'</button>'
+  ).join('');
+}
+function medicionRowHtml(m){
+  const clase=clasificarMedicion(m.tipo,m.valor1,m.valor2);
+  const valTxt = m.tipo==='presion' ? m.valor1+'/'+m.valor2 : m.valor1;
+  return '<div class="row-item static">'+
+    '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+MEDICION_TIPOS[m.tipo].icono+'</div>'+
+    '<div class="row-main"><div class="row-title">'+valTxt+' '+MEDICION_TIPOS[m.tipo].unidad+'</div><div class="row-sub">'+fmtFechaHora(m.fecha)+(m.notas?' · '+esc(m.notas):'')+'</div></div>'+
+    (clase?'<div class="row-amt"><div class="row-amt-val '+clase+'">●</div></div>':'')+
+  '</div>';
+}
+function dibujarChartMediciones(mediciones){
+  const canvas=document.getElementById('cuerpo-chart');
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  if(mediciones.length<1) return;
+  const valores=mediciones.map(m=>m.valor1);
+  const min=Math.min(...valores), max=Math.max(...valores), rango=(max-min)||1;
+  const pad=24, w=canvas.width-2*pad, h=canvas.height-2*pad;
+  ctx.strokeStyle='#10b981'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  ctx.beginPath();
+  mediciones.forEach((m,i)=>{
+    const x=pad+(mediciones.length>1?(i/(mediciones.length-1))*w:w/2);
+    const y=pad+h-((m.valor1-min)/rango)*h;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle='#10b981';
+  mediciones.forEach((m,i)=>{
+    const x=pad+(mediciones.length>1?(i/(mediciones.length-1))*w:w/2);
+    const y=pad+h-((m.valor1-min)/rango)*h;
+    ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill();
+  });
+}
+function renderCuerpo(){
+  renderTiposMedicionPills();
+  const mediciones=(DB.mediciones||[]).filter(m=>m.tipo===_tipoMedicionSel).sort((a,b)=>a.fecha-b.fecha);
+  dibujarChartMediciones(mediciones);
+  const historialOrdenado=[...mediciones].reverse();
+  document.getElementById('cuerpo-historial').innerHTML=historialOrdenado.length? historialOrdenado.map(medicionRowHtml).join('') : '<div class="empty"><div class="empty-sub">Todavía no registraste '+MEDICION_TIPOS[_tipoMedicionSel].nombre.toLowerCase()+'</div></div>';
+}
+function abrirModalMedicion(){
+  const tipo=MEDICION_TIPOS[_tipoMedicionSel];
+  document.getElementById('med-titulo').textContent='Registrar '+tipo.nombre;
+  document.getElementById('med-valor1-label').textContent=(tipo.doble?'Sistólica':'Valor')+' ('+tipo.unidad+')';
+  document.getElementById('med-valor2-wrap').style.display=tipo.doble?'block':'none';
+  document.getElementById('med-valor1').value='';
+  document.getElementById('med-valor2').value='';
+  document.getElementById('med-fecha').value=fechaHoy();
+  document.getElementById('med-notas').value='';
+  abrirModal('medicion');
+}
+async function guardarMedicion(){
+  const v1=parseFloat(document.getElementById('med-valor1').value);
+  if(isNaN(v1)){ toast('⚠️ Ingresá un valor válido'); return; }
+  const tipo=MEDICION_TIPOS[_tipoMedicionSel];
+  let v2=null;
+  if(tipo.doble){
+    v2=parseFloat(document.getElementById('med-valor2').value);
+    if(isNaN(v2)){ toast('⚠️ Ingresá también el valor diastólico'); return; }
+  }
+  const fecha=document.getElementById('med-fecha').value;
+  const notas=(document.getElementById('med-notas').value||'').trim();
+  const medicion={id:uid(), tipo:_tipoMedicionSel, valor1:v1, valor2:v2, fecha:new Date(fecha+'T12:00:00').getTime(), notas};
+  if(!DB.mediciones) DB.mediciones=[];
+  DB.mediciones.push(medicion);
+  await save();
+  cerrarModal('medicion');
+  renderCuerpo();
+  if(_pagActual==='home') renderHome();
+  toast('✅ Guardado');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// NUTRICION — comidas, dietas, hidratación
+// ═══════════════════════════════════════════════════════════════
+function comidaRowHtml(c){
+  return '<div class="row-item static"><div class="row-icon" style="background:rgba(16,185,129,.15)">🍽️</div><div class="row-main"><div class="row-title">'+esc(c.descripcion)+'</div><div class="row-sub">'+fmtFecha(c.fecha)+' · '+c.tipo+(c.calorias?' · '+c.calorias+' kcal':'')+'</div></div></div>';
+}
+function renderNutricion(){
+  const hoy=fechaHoy();
+  const vasos=(DB.hidratacion||{})[hoy]||0;
+  document.getElementById('hidr-vasos').textContent=vasos+'/8';
+  const comidasHoy=(DB.comidas||[]).filter(c=>c.fecha===hoy).sort((a,b)=>b.creadoEn-a.creadoEn);
+  document.getElementById('nutricion-comidas-hoy').innerHTML=comidasHoy.length? comidasHoy.map(comidaRowHtml).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Todavía no registraste comidas hoy</div></div>';
+  const dietas=DB.dietas||[];
+  document.getElementById('nutricion-dietas').innerHTML=dietas.length? dietas.map(d=>
+    '<div class="row-item static"><div class="row-icon" style="background:rgba(16,185,129,.15)">📋</div><div class="row-main"><div class="row-title">'+esc(d.nombre)+'</div><div class="row-sub">'+esc(d.notas||'')+'</div></div>'+
+    '<button class="row-fav" style="font-size:18px" onclick="borrarDieta(\''+d.id+'\')">🗑</button></div>'
+  ).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Sin planes creados</div></div>';
+  const historial=[...(DB.comidas||[])].sort((a,b)=>b.creadoEn-a.creadoEn).slice(0,20);
+  document.getElementById('nutricion-historial').innerHTML=historial.length? historial.map(comidaRowHtml).join('') : '<div class="empty"><div class="empty-sub">Sin historial todavía</div></div>';
+}
+async function agregarVasoAgua(){
+  const hoy=fechaHoy();
+  if(!DB.hidratacion) DB.hidratacion={};
+  DB.hidratacion[hoy]=(DB.hidratacion[hoy]||0)+1;
+  await save();
+  renderNutricion();
+}
+async function quitarVasoAgua(){
+  const hoy=fechaHoy();
+  if(!DB.hidratacion) DB.hidratacion={};
+  DB.hidratacion[hoy]=Math.max(0,(DB.hidratacion[hoy]||0)-1);
+  await save();
+  renderNutricion();
+}
+let _tipoComidaSel='desayuno';
+function renderComidaTipoPills(){
+  const tipos=[['desayuno','Desayuno'],['almuerzo','Almuerzo'],['merienda','Merienda'],['cena','Cena'],['snack','Snack']];
+  document.getElementById('comida-tipo-pills').innerHTML=tipos.map(([id,label])=>
+    '<button type="button" class="pill '+(id===_tipoComidaSel?'sel':'')+'" onclick="_tipoComidaSel=\''+id+'\';renderComidaTipoPills()">'+label+'</button>'
+  ).join('');
+}
+function abrirModalComida(){
+  _tipoComidaSel='desayuno';
+  renderComidaTipoPills();
+  document.getElementById('comida-desc').value='';
+  document.getElementById('comida-cal').value='';
+  abrirModal('comida');
+}
+async function guardarComida(){
+  const desc=(document.getElementById('comida-desc').value||'').trim();
+  if(!desc){ toast('⚠️ Ingresá una descripción'); return; }
+  const cal=parseFloat(document.getElementById('comida-cal').value);
+  const comida={id:uid(), tipo:_tipoComidaSel, descripcion:desc, calorias:isNaN(cal)?null:cal, fecha:fechaHoy(), creadoEn:Date.now()};
+  if(!DB.comidas) DB.comidas=[];
+  DB.comidas.push(comida);
+  await save();
+  cerrarModal('comida');
+  renderNutricion();
+  toast('✅ Guardado');
+}
+function abrirModalDieta(){ document.getElementById('dieta-nombre').value=''; document.getElementById('dieta-notas').value=''; abrirModal('dieta'); }
+async function guardarDieta(){
+  const nombre=(document.getElementById('dieta-nombre').value||'').trim();
+  if(!nombre){ toast('⚠️ Ingresá un nombre'); return; }
+  const notas=(document.getElementById('dieta-notas').value||'').trim();
+  if(!DB.dietas) DB.dietas=[];
+  DB.dietas.push({id:uid(), nombre, notas, creadoEn:Date.now()});
+  await save();
+  cerrarModal('dieta');
+  renderNutricion();
+  toast('✅ Plan creado');
+}
+async function borrarDieta(id){
+  if(!confirm('¿Eliminar este plan?')) return;
+  DB.dietas=(DB.dietas||[]).filter(d=>d.id!==id);
+  await save();
+  renderNutricion();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// RUTINAS — gimnasio / calistenia
+// ═══════════════════════════════════════════════════════════════
+function renderRutinas(){
+  const rutinas=DB.rutinas||[];
+  document.getElementById('rutinas-lista').innerHTML=rutinas.length? rutinas.map(r=>
+    '<div class="row-item" onclick="abrirRutinaDetalle(\''+r.id+'\')"><div class="row-icon" style="background:rgba(16,185,129,.15)">💪</div><div class="row-main"><div class="row-title">'+esc(r.nombre)+'</div><div class="row-sub">'+(r.ejercicios||[]).length+' ejercicios</div></div></div>'
+  ).join('') : '<div class="empty"><div class="empty-icon">💪</div><div class="empty-text">Sin rutinas creadas</div></div>';
+}
+function abrirModalRutina(){ document.getElementById('rutina-nombre').value=''; abrirModal('rutina'); }
+async function guardarRutina(){
+  const nombre=(document.getElementById('rutina-nombre').value||'').trim();
+  if(!nombre){ toast('⚠️ Ingresá un nombre'); return; }
+  if(!DB.rutinas) DB.rutinas=[];
+  DB.rutinas.push({id:uid(), nombre, ejercicios:[], creadoEn:Date.now()});
+  await save();
+  cerrarModal('rutina');
+  renderRutinas();
+  toast('✅ Rutina creada');
+}
+let _rutinaActualId=null;
+function abrirRutinaDetalle(id){ _rutinaActualId=id; navGo('rutina-detalle'); renderRutinaDetalle(); }
+function renderRutinaDetalle(){
+  const r=(DB.rutinas||[]).find(x=>x.id===_rutinaActualId);
+  if(!r) return;
+  document.getElementById('rd-titulo').textContent=r.nombre;
+  document.getElementById('rd-sub').textContent=(r.ejercicios||[]).length+' ejercicios';
+  document.getElementById('rutina-detalle-ejercicios').innerHTML=(r.ejercicios||[]).length? r.ejercicios.map((e,i)=>
+    '<div class="row-item static"><div class="row-icon" style="background:rgba(16,185,129,.15)">🏋️</div><div class="row-main"><div class="row-title">'+esc(e.nombre)+'</div><div class="row-sub">'+e.series+' series × '+esc(e.reps)+' · descanso '+e.descanso+'s</div></div>'+
+    '<button class="row-fav" style="font-size:18px" onclick="borrarEjercicio('+i+')">🗑</button></div>'
+  ).join('') : '<div class="empty"><div class="empty-sub">Sin ejercicios todavía</div></div>';
+}
+function abrirModalEjercicio(){
+  document.getElementById('ej-nombre').value='';
+  document.getElementById('ej-series').value='';
+  document.getElementById('ej-reps').value='';
+  document.getElementById('ej-descanso').value='';
+  abrirModal('ejercicio');
+}
+async function guardarEjercicio(){
+  const nombre=(document.getElementById('ej-nombre').value||'').trim();
+  if(!nombre){ toast('⚠️ Ingresá un nombre'); return; }
+  const series=parseInt(document.getElementById('ej-series').value)||0;
+  const reps=(document.getElementById('ej-reps').value||'').trim();
+  const descanso=parseInt(document.getElementById('ej-descanso').value)||0;
+  const r=(DB.rutinas||[]).find(x=>x.id===_rutinaActualId);
+  if(!r) return;
+  if(!r.ejercicios) r.ejercicios=[];
+  r.ejercicios.push({nombre, series, reps, descanso});
+  await save();
+  cerrarModal('ejercicio');
+  renderRutinaDetalle();
+  toast('✅ Ejercicio agregado');
+}
+async function borrarEjercicio(idx){
+  const r=(DB.rutinas||[]).find(x=>x.id===_rutinaActualId);
+  if(!r) return;
+  r.ejercicios.splice(idx,1);
+  await save();
+  renderRutinaDetalle();
+}
+async function borrarRutinaActual(){
+  if(!confirm('¿Eliminar esta rutina?')) return;
+  DB.rutinas=(DB.rutinas||[]).filter(r=>r.id!==_rutinaActualId);
+  await save();
+  navGo('rutinas');
+  toast('🗑 Eliminada');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// AGENDA — turnos médicos + avisos
+// ═══════════════════════════════════════════════════════════════
+function turnoRowHtml(t){
+  const vencido=t.fecha<fechaHoy();
+  return '<div class="row-item" onclick="abrirModalTurno(\''+t.id+'\')"><div class="row-icon" style="background:rgba(14,165,233,.15)">🩺</div><div class="row-main"><div class="row-title">'+esc(t.especialidad)+'</div><div class="row-sub">'+fmtFecha(t.fecha)+' '+t.hora+(t.medico?' · '+esc(t.medico):'')+(vencido?' · pasado':'')+'</div></div></div>';
+}
+function renderAgenda(){
+  const turnos=[...(DB.turnos||[])].sort((a,b)=>(a.fecha+a.hora).localeCompare(b.fecha+b.hora));
+  document.getElementById('agenda-turnos').innerHTML=turnos.length? turnos.map(turnoRowHtml).join('') : '<div class="empty"><div class="empty-sub">Sin turnos agendados</div></div>';
+  const avisos=DB.avisos||[];
+  document.getElementById('agenda-avisos').innerHTML=avisos.length? avisos.map(a=>
+    '<div class="row-item static"><div class="row-icon" style="background:rgba(245,158,11,.15)">⏰</div><div class="row-main"><div class="row-title">'+esc(a.texto)+'</div><div class="row-sub">'+a.hora+'</div></div>'+
+    '<button class="row-fav" style="font-size:18px" onclick="borrarAviso(\''+a.id+'\')">🗑</button></div>'
+  ).join('') : '<div class="empty" style="padding:16px 0"><div class="empty-sub">Sin avisos creados</div></div>';
+}
+let _turnoActualId=null;
+function abrirModalTurno(id){
+  const t=id?(DB.turnos||[]).find(x=>x.id===id):null;
+  _turnoActualId=id||null;
+  document.getElementById('turno-modal-titulo').textContent=t?'Editar turno':'+ Turno médico';
+  document.getElementById('turno-especialidad').value=t?t.especialidad:'';
+  document.getElementById('turno-medico').value=t?(t.medico||''):'';
+  document.getElementById('turno-fecha').value=t?t.fecha:fechaHoy();
+  document.getElementById('turno-hora').value=t?t.hora:'09:00';
+  document.getElementById('turno-lugar').value=t?(t.lugar||''):'';
+  document.getElementById('turno-notas').value=t?(t.notas||''):'';
+  document.getElementById('btn-borrar-turno').style.display=t?'block':'none';
+  abrirModal('turno');
+}
+async function guardarTurno(){
+  const especialidad=(document.getElementById('turno-especialidad').value||'').trim();
+  if(!especialidad){ toast('⚠️ Ingresá la especialidad'); return; }
+  const fecha=document.getElementById('turno-fecha').value;
+  if(!fecha){ toast('⚠️ Ingresá la fecha'); return; }
+  const turno={
+    id:_turnoActualId||uid(), especialidad,
+    medico:(document.getElementById('turno-medico').value||'').trim(),
+    fecha, hora:document.getElementById('turno-hora').value||'09:00',
+    lugar:(document.getElementById('turno-lugar').value||'').trim(),
+    notas:(document.getElementById('turno-notas').value||'').trim(),
+  };
+  if(!DB.turnos) DB.turnos=[];
+  if(_turnoActualId){ const idx=DB.turnos.findIndex(x=>x.id===_turnoActualId); if(idx>=0) DB.turnos[idx]=turno; }
+  else DB.turnos.push(turno);
+  await save();
+  cerrarModal('turno');
+  renderAgenda();
+  if(_pagActual==='home') renderHome();
+  toast('✅ Guardado');
+}
+async function borrarTurno(){
+  if(!_turnoActualId||!confirm('¿Eliminar este turno?')) return;
+  DB.turnos=(DB.turnos||[]).filter(t=>t.id!==_turnoActualId);
+  await save();
+  cerrarModal('turno');
+  renderAgenda();
+  if(_pagActual==='home') renderHome();
+  toast('🗑 Eliminado');
+}
+function abrirModalAviso(){ document.getElementById('aviso-texto').value=''; document.getElementById('aviso-hora').value='08:00'; abrirModal('aviso'); }
+async function guardarAviso(){
+  const texto=(document.getElementById('aviso-texto').value||'').trim();
+  if(!texto){ toast('⚠️ Ingresá un texto'); return; }
+  const hora=document.getElementById('aviso-hora').value||'08:00';
+  if(!DB.avisos) DB.avisos=[];
+  DB.avisos.push({id:uid(), texto, hora, creadoEn:Date.now()});
+  await save();
+  cerrarModal('aviso');
+  renderAgenda();
+  toast('✅ Aviso creado');
+}
+async function borrarAviso(id){
+  DB.avisos=(DB.avisos||[]).filter(a=>a.id!==id);
+  await save();
+  renderAgenda();
+}
+
+// ═══════════════════════════════════════════════════════════════
+// LUGARES CERCANOS — restoranes, YPF, comida rápida, cafés (Overpass/OSM)
+// ═══════════════════════════════════════════════════════════════
+const LUGAR_CATEGORIAS=[
+  {id:'restaurant', nombre:'🍽️ Restoranes'},
+  {id:'fast_food', nombre:'🍔 Comida rápida'},
+  {id:'cafe', nombre:'☕ Cafés'},
+  {id:'fuel', nombre:'⛽ YPF / Combustible'},
+];
+let _categoriaLugarSel='restaurant';
+function renderCategoriasLugares(){
+  document.getElementById('lugares-categorias').innerHTML=LUGAR_CATEGORIAS.map(c=>
+    '<button class="pill '+(c.id===_categoriaLugarSel?'sel':'')+'" onclick="cambiarCategoriaLugar(\''+c.id+'\')">'+c.nombre+'</button>'
+  ).join('');
+}
+function cambiarCategoriaLugar(id){ _categoriaLugarSel=id; renderCategoriasLugares(); }
+function renderLugares(){ renderCategoriasLugares(); }
+async function buscarLugaresCercanos(){
+  if(!navigator.geolocation){ toast('⚠️ GPS no disponible'); return; }
+  const el=document.getElementById('lugares-resultados');
+  el.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-sub">Obteniendo tu ubicación...</div></div>';
+  navigator.geolocation.getCurrentPosition(async pos=>{
+    const {latitude:lat, longitude:lon}=pos.coords;
+    const cat=LUGAR_CATEGORIAS.find(c=>c.id===_categoriaLugarSel);
+    el.innerHTML='<div class="empty" style="padding:20px 0"><div class="empty-sub">Buscando cerca...</div></div>';
+    try{
+      const radio=2000;
+      const query='[out:json][timeout:15];node["amenity"="'+cat.id+'"](around:'+radio+','+lat+','+lon+');out body 30;';
+      const res=await fetch('https://overpass-api.de/api/interpreter', {method:'POST', body:query});
+      const data=await res.json();
+      const lugares=(data.elements||[]).map(e=>({
+        nombre:(e.tags&&e.tags.name)||cat.nombre,
+        lat:e.lat, lon:e.lon,
+        distanciaM:Math.round(_haversineM(lat,lon,e.lat,e.lon)),
+        marca:(e.tags&&(e.tags.brand||e.tags.operator))||'',
+      })).sort((a,b)=>a.distanciaM-b.distanciaM);
+      renderLugaresResultados(lugares, cat);
+    }catch(err){
+      el.innerHTML='<div class="empty"><div class="empty-icon">😕</div><div class="empty-text">No se pudo buscar</div><div class="empty-sub">Revisá tu conexión e intentá de nuevo</div></div>';
+    }
+  }, err=>{
+    el.innerHTML='<div class="empty"><div class="empty-icon">📍</div><div class="empty-text">No se pudo obtener tu ubicación</div><div class="empty-sub">Activá el GPS y dale permiso a la app</div></div>';
+  }, {enableHighAccuracy:true, timeout:12000});
+}
+function renderLugaresResultados(lugares, cat){
+  const el=document.getElementById('lugares-resultados');
+  if(!lugares.length){ el.innerHTML='<div class="empty"><div class="empty-icon">📍</div><div class="empty-text">No se encontró nada cerca</div><div class="empty-sub">Probá con otra categoría</div></div>'; return; }
+  el.innerHTML=lugares.map(l=>
+    '<div class="row-item" onclick="window.open(\'https://www.google.com/maps/dir/?api=1&destination='+l.lat+','+l.lon+'\',\'_blank\')">'+
+      '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+cat.nombre.split(' ')[0]+'</div>'+
+      '<div class="row-main"><div class="row-title">'+esc(l.nombre)+(l.marca&&l.marca!==l.nombre?' — '+esc(l.marca):'')+'</div><div class="row-sub">A '+(l.distanciaM<1000?l.distanciaM+' m':(l.distanciaM/1000).toFixed(1)+' km')+'</div></div>'+
+    '</div>'
+  ).join('');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PERFIL
+// ═══════════════════════════════════════════════════════════════
+function abrirModalPerfil(){
+  document.getElementById('perfil-nombre').value=DB.perfil.nombre||'';
+  document.getElementById('perfil-edad').value=DB.perfil.edad||'';
+  document.getElementById('perfil-altura').value=DB.perfil.altura||'';
+  abrirModal('perfil');
+}
+async function guardarPerfil(){
+  DB.perfil.nombre=(document.getElementById('perfil-nombre').value||'').trim();
+  const edad=parseInt(document.getElementById('perfil-edad').value);
+  const altura=parseFloat(document.getElementById('perfil-altura').value);
+  DB.perfil.edad=isNaN(edad)?null:edad;
+  DB.perfil.altura=isNaN(altura)?null:altura;
+  await save();
+  cerrarModal('perfil');
+  renderHome();
+  toast('✅ Perfil actualizado');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BACKUP / RESTORE (encriptado)
+// ═══════════════════════════════════════════════════════════════
+async function exportarBackup(){
+  const saltB64=localStorage.getItem('figsalud_salt');
+  const blob=await _encryptJSON(DB,_key);
+  const paquete={salt:saltB64, blob, exportadoEn:new Date().toISOString()};
+  const json=JSON.stringify(paquete);
+  const url=URL.createObjectURL(new Blob([json],{type:'application/json'}));
+  const a=document.createElement('a'); a.href=url;
+  a.download='frigurso-salud-backup-'+fechaHoy()+'.figsalud';
+  document.body.appendChild(a); a.click(); document.body.removeChild(a);
+  URL.revokeObjectURL(url);
+  DB.ultimoBackup=Date.now();
+  await save();
+  toast('📦 Backup exportado');
+}
+function importarBackup(e){
+  const file=e.target.files[0];
+  if(!file) return;
+  const reader=new FileReader();
+  reader.onload=async(ev)=>{
+    try{
+      const paquete=JSON.parse(ev.target.result);
+      if(!confirm('Esto va a reemplazar todos tus datos actuales por los del backup. ¿Continuar?')) return;
+      localStorage.setItem('figsalud_salt', paquete.salt);
+      localStorage.setItem('figsalud_blob', JSON.stringify(paquete.blob));
+      toast('✅ Backup importado — ingresá con tu contraseña');
+      cerrarSesion();
+    }catch(err){ toast('❌ Archivo inválido'); e.target.value=''; }
+  };
+  reader.readAsText(file);
+}
+
+// ═══════════════════════════════════════════════════════════════
+// ARRANQUE
+// ═══════════════════════════════════════════════════════════════
+window.addEventListener('DOMContentLoaded', ()=>{
+  initAuth();
+  if('serviceWorker' in navigator){ navigator.serviceWorker.register('sw.js').catch(()=>{}); }
+});
+
+// ═══════════════════════════════════════════════════════════════
+// PULL TO REFRESH
+// ═══════════════════════════════════════════════════════════════
+function refrescarPaginaActual(){ const fn=PAGE_RENDER_FN[_pagActual]; if(fn) fn(); }
+const PTR_THRESHOLD=70, PTR_MAX=110;
+let _ptrStartY=null, _ptrPulling=false;
+function _ptrEl(){ return document.getElementById('ptr-indicator'); }
+document.addEventListener('touchstart', e=>{
+  if(document.querySelector('.modal-overlay.open')){ _ptrStartY=null; return; }
+  if((document.scrollingElement||document.documentElement).scrollTop>0){ _ptrStartY=null; return; }
+  _ptrStartY=e.touches[0].clientY; _ptrPulling=false;
+}, {passive:true});
+document.addEventListener('touchmove', e=>{
+  if(_ptrStartY==null) return;
+  if((document.scrollingElement||document.documentElement).scrollTop>0){ _ptrStartY=null; return; }
+  const dy=e.touches[0].clientY-_ptrStartY;
+  if(dy<=0) return;
+  _ptrPulling=true;
+  const dist=Math.min(dy*0.5,PTR_MAX);
+  const el=_ptrEl();
+  el.style.transition='none';
+  el.style.transform='translate(-50%,'+(dist-40)+'px)';
+  el.style.opacity=String(Math.min(dist/PTR_THRESHOLD,1));
+  el.textContent=dist>=PTR_THRESHOLD?'⬆️':'⬇️';
+  if(e.cancelable) e.preventDefault();
+}, {passive:false});
+document.addEventListener('touchend', ()=>{
+  if(!_ptrPulling){ _ptrStartY=null; return; }
+  const el=_ptrEl();
+  el.style.transition='transform .25s,opacity .25s';
+  const m=/-?\d+\.?\d*/.exec(el.style.transform.split(',')[1]||'');
+  const dist=(m?parseFloat(m[0]):-40)+40;
+  if(dist>=PTR_THRESHOLD){
+    el.textContent='⏳';
+    setTimeout(()=>{ refrescarPaginaActual(); el.style.transform='translate(-50%,-40px)'; el.style.opacity='0'; },400);
+  }else{ el.style.transform='translate(-50%,-40px)'; el.style.opacity='0'; }
+  _ptrStartY=null; _ptrPulling=false;
+}, {passive:true});
+</script>
+</body>
+</html>
