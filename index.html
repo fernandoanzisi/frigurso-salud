@@ -1431,6 +1431,23 @@ function _detenerCamaraPulso(){
   if(_pulsoCamaraRAF){ cancelAnimationFrame(_pulsoCamaraRAF); _pulsoCamaraRAF=null; }
   if(_pulsoCamaraStream){ _pulsoCamaraStream.getTracks().forEach(t=>t.stop()); _pulsoCamaraStream=null; }
 }
+// Reintenta prender el flash (torch) del track de video varias veces con una pequeña
+// espera entre intentos, porque en muchos Android las capabilities del track no estan
+// disponibles en el instante justo en que getUserMedia() resuelve. Devuelve true/false.
+async function _intentarPrenderFlash(track, intentos){
+  intentos = intentos || 5;
+  for(let i=0;i<intentos;i++){
+    try{
+      const caps=track.getCapabilities ? track.getCapabilities() : {};
+      if(caps.torch){
+        await track.applyConstraints({advanced:[{torch:true}]});
+        return true;
+      }
+    }catch(e){ /* seguimos reintentando */ }
+    await new Promise(r=>setTimeout(r,200));
+  }
+  return false;
+}
 async function iniciarMedicionCamara(){
   const estadoEl=document.getElementById('pulso-camara-estado');
   const btnIniciar=document.getElementById('btn-iniciar-medicion-camara');
@@ -1448,12 +1465,13 @@ async function iniciarMedicionCamara(){
   video.srcObject=_pulsoCamaraStream;
   try{ await video.play(); }catch(e){}
   // intentamos prender el flash (torch) — mejora mucho la lectura, pero no todos los
-  // celulares/navegadores lo permiten. Si no se puede, igual medimos con luz ambiente.
+  // celulares/navegadores lo permiten (en iOS Safari no se puede en absoluto). Ademas,
+  // en varios Android las "capabilities" del track vienen vacias si se consultan apenas
+  // se resuelve getUserMedia -- todavia no terminaron de poblarse -- asi que reintentamos
+  // con una pequeña espera antes de darlo por perdido.
   const track=_pulsoCamaraStream.getVideoTracks()[0];
-  try{
-    const caps=track.getCapabilities ? track.getCapabilities() : {};
-    if(caps.torch) await track.applyConstraints({advanced:[{torch:true}]});
-  }catch(e){ /* sin flash, seguimos igual */ }
+  const flashOk=await _intentarPrenderFlash(track);
+  if(!flashOk) toast('💡 Este dispositivo no permite prender el flash automáticamente — medimos igual con luz ambiente, buscá un lugar con buena luz');
 
   btnIniciar.style.display='none';
   _pulsoCamaraMuestras=[];
