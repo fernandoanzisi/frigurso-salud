@@ -1,4 +1,4 @@
-const CACHE = 'salud-v3';
+const CACHE = 'salud-v4';
 const PRECACHE = ['./', './index.html', './manifest.json'];
 
 self.addEventListener('install', e => {

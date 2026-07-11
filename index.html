@@ -40,6 +40,10 @@
   .section{padding:14px 14px 0}
   .section-title{font-size:10px;font-weight:700;letter-spacing:1.5px;color:var(--text3);text-transform:uppercase;margin-bottom:10px}
   .card{background:var(--card);border:1px solid var(--border);border-radius:16px;padding:14px 16px;margin-bottom:10px;box-shadow:var(--shadow)}
+  .resp-circulo{width:180px;height:180px;border-radius:50%;background:radial-gradient(circle,var(--accent2),var(--accent));display:flex;align-items:center;justify-content:center;transition:transform 4s ease-in-out;box-shadow:0 0 40px rgba(14,165,233,.4)}
+  .resp-circulo.inhalar{transform:scale(1.3)}
+  .resp-circulo.exhalar{transform:scale(.8)}
+  .resp-texto{color:#fff;font-weight:800;font-size:16px;text-align:center;padding:0 10px}
 
   .hero{margin:14px;border-radius:22px;padding:22px 20px;background:linear-gradient(135deg,var(--accent),var(--accent2));box-shadow:0 8px 30px rgba(16,185,129,.3);position:relative;overflow:hidden}
   .hero::after{content:'';position:absolute;top:-40%;right:-20%;width:200px;height:200px;border-radius:50%;background:rgba(255,255,255,.08)}
@@ -108,6 +112,8 @@
 </style>
 </head>
 <body>
+
+<div class="toast" id="toast"></div>
 
 <!-- AUTH -->
 <div class="auth-screen" id="auth-screen">
@@ -302,6 +308,7 @@
 <div class="page" id="page-mas">
   <div class="header"><div style="flex:1"><div class="header-title">📋 Más</div></div></div>
   <div class="section">
+    <div class="row-item" onclick="navGo('bienestar')"><div class="row-icon" style="background:rgba(168,85,247,.15)">🧘</div><div class="row-main"><div class="row-title">Bienestar emocional</div><div class="row-sub">Diario, ánimo y ejercicios de apoyo</div></div></div>
     <div class="row-item" onclick="navGo('rutinas')"><div class="row-icon" style="background:rgba(16,185,129,.15)">💪</div><div class="row-main"><div class="row-title">Rutinas</div><div class="row-sub">Gimnasio y calistenia</div></div></div>
     <div class="row-item" onclick="navGo('agenda')"><div class="row-icon" style="background:rgba(14,165,233,.15)">📅</div><div class="row-main"><div class="row-title">Agenda</div><div class="row-sub" id="mas-agenda-sub">Turnos médicos y avisos</div></div></div>
     <div class="row-item" onclick="navGo('lugares')"><div class="row-icon" style="background:rgba(245,158,11,.15)">📍</div><div class="row-main"><div class="row-title">Lugares cercanos</div><div class="row-sub">Restoranes, YPF, cafés, comida rápida</div></div></div>
@@ -310,10 +317,110 @@
     <div class="row-item" onclick="exportarBackup()"><div class="row-icon" style="background:rgba(34,197,94,.15)">📦</div><div class="row-main"><div class="row-title">Exportar backup</div><div class="row-sub">Guardar todo en un archivo encriptado</div></div></div>
     <label class="row-item" style="display:flex">
       <div class="row-icon" style="background:rgba(14,165,233,.15)">📥</div>
-      <div class="row-main"><div class="row-title">Importar backup</div><div class="row-sub">Restaurar desde un archivo .figsalud</div></div>
+      <div class="row-main"><div class="row-title">Sumar backup</div><div class="row-sub">Trae los datos de otro dispositivo, sin borrar los tuyos</div></div>
       <input type="file" accept=".figsalud" style="display:none" onchange="importarBackup(event)">
     </label>
     <div class="row-item" onclick="cerrarSesion()"><div class="row-icon" style="background:rgba(248,113,113,.15)">🔒</div><div class="row-main"><div class="row-title">Cerrar sesión</div></div></div>
+  </div>
+</div>
+
+<!-- BIENESTAR EMOCIONAL -->
+<div class="page" id="page-bienestar">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('mas')">←</button>
+    <div style="flex:1"><div class="header-title">🧘 Bienestar emocional</div><div class="header-sub">Un espacio para vos — no reemplaza a un profesional</div></div>
+  </div>
+  <div class="section">
+    <div class="card">
+      <div class="section-title" style="margin-bottom:10px">¿Cómo estás hoy?</div>
+      <div class="pill-row" id="bienestar-animo-pills"></div>
+    </div>
+  </div>
+  <div class="section" style="margin-top:10px">
+    <button class="btn-primary" onclick="abrirModalDiario()">✍️ Escribir en el diario</button>
+  </div>
+  <div class="section" style="margin-top:10px">
+    <div class="section-title">Tu ánimo, últimos 30 días</div>
+    <div class="chart-canvas-wrap"><canvas id="bienestar-chart" width="600" height="180" style="width:100%;display:block"></canvas></div>
+  </div>
+  <div class="section" style="margin-top:14px">
+    <div class="section-title">Ejercicios</div>
+    <div class="row-item" onclick="navGo('respiracion')"><div class="row-icon" style="background:rgba(14,165,233,.15)">🫁</div><div class="row-main"><div class="row-title">Respiración guiada</div><div class="row-sub">Para bajar la ansiedad en el momento</div></div></div>
+    <div class="row-item" onclick="navGo('grounding')"><div class="row-icon" style="background:rgba(16,185,129,.15)">🌱</div><div class="row-main"><div class="row-title">Grounding 5-4-3-2-1</div><div class="row-sub">Para volver al presente</div></div></div>
+    <div class="row-item" onclick="abrirModalPensamiento()"><div class="row-icon" style="background:rgba(245,158,11,.15)">💭</div><div class="row-main"><div class="row-title">Cuestionar un pensamiento</div><div class="row-sub">Técnica de Terapia Cognitivo-Conductual</div></div></div>
+  </div>
+  <div class="section" style="margin-top:14px"><div class="section-title">Historial del diario</div><div id="bienestar-historial"></div></div>
+</div>
+
+<!-- RESPIRACION GUIADA -->
+<div class="page" id="page-respiracion">
+  <div class="header">
+    <button class="btn-icon" onclick="detenerRespiracion();navGo('bienestar')">←</button>
+    <div style="flex:1"><div class="header-title">🫁 Respiración guiada</div></div>
+  </div>
+  <div class="section" style="display:flex;flex-direction:column;align-items:center;padding-top:36px">
+    <div id="resp-circulo" class="resp-circulo"><div id="resp-texto" class="resp-texto">Tocá empezar</div></div>
+    <div id="resp-ciclos" style="margin-top:22px;font-size:12px;color:var(--text3)"></div>
+    <button class="btn-primary" id="resp-btn" style="max-width:280px;margin-top:34px" onclick="toggleRespiracion()">▶️ Empezar</button>
+    <div class="card" style="margin-top:20px;font-size:11px;color:var(--text3)">Respiración de caja (4-4-4-4): inhalá 4 segundos, sostené 4, exhalá 4, sostené 4. Repetilo unos minutos.</div>
+  </div>
+</div>
+
+<!-- GROUNDING 5-4-3-2-1 -->
+<div class="page" id="page-grounding">
+  <div class="header">
+    <button class="btn-icon" onclick="navGo('bienestar')">←</button>
+    <div style="flex:1"><div class="header-title">🌱 Grounding 5-4-3-2-1</div></div>
+  </div>
+  <div class="section">
+    <div class="card" id="grounding-card">
+      <div class="section-title" id="grounding-instruccion" style="margin-bottom:10px;font-size:14px;color:var(--text);text-transform:none;letter-spacing:normal">Nombrá 5 cosas que podés VER a tu alrededor</div>
+      <textarea class="input" id="grounding-texto" rows="3" placeholder="(opcional, también podés solo pensarlo)" style="width:100%;resize:vertical"></textarea>
+    </div>
+  </div>
+  <div class="section"><button class="btn-primary" onclick="siguientePasoGrounding()" id="grounding-btn">Siguiente →</button></div>
+</div>
+
+<!-- MODAL: DIARIO -->
+<div class="modal-overlay" id="modal-diario" onclick="if(event.target===this)cerrarModal('diario')">
+  <div class="modal">
+    <div class="modal-title">✍️ Diario de hoy</div>
+    <div class="field-wrap"><div class="field-label">¿Cómo te sentís?</div><div class="pill-row" id="diario-animo-pills"></div></div>
+    <div class="field-wrap">
+      <div class="field-label" id="diario-pregunta">¿Qué fue lo más difícil de hoy?</div>
+      <textarea class="input" id="diario-texto" rows="5" style="width:100%;resize:vertical"></textarea>
+    </div>
+    <button class="btn-ghost" style="margin-top:-6px;margin-bottom:14px" onclick="cambiarPreguntaDiario()">🔄 Otra pregunta</button>
+    <button class="btn-primary" onclick="guardarDiario()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('diario')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: IMPORTAR BACKUP (fusión) -->
+<div class="modal-overlay" id="modal-importar-backup" onclick="if(event.target===this)cerrarModal('importar-backup')">
+  <div class="modal">
+    <div class="modal-title">📥 Sumar backup</div>
+    <div class="field-wrap"><div class="field-label" style="opacity:.75;font-weight:400">Este backup se va a sumar a lo que ya tenés en este dispositivo — no se borra nada existente.</div></div>
+    <div class="field-wrap"><div class="field-label">Contraseña con la que se exportó ese backup</div><input type="password" class="input" id="imp-pass" placeholder="Contraseña"></div>
+    <div id="imp-err" style="display:none;color:#f87171;font-size:13px;margin:-8px 0 12px"></div>
+    <button class="btn-primary" onclick="confirmarImportarBackup()">Sumar datos</button>
+    <button class="btn-ghost" onclick="cerrarModal('importar-backup')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: CUESTIONAR UN PENSAMIENTO (CBT) -->
+<div class="modal-overlay" id="modal-pensamiento" onclick="if(event.target===this)cerrarModal('pensamiento')">
+  <div class="modal">
+    <div class="modal-title">💭 Cuestionar un pensamiento</div>
+    <div class="card" style="font-size:11px;color:var(--text3);margin-bottom:12px">Basado en Terapia Cognitivo-Conductual. No busca decirte "no pienses eso" — te ayuda a mirarlo con más calma y desde otros ángulos.</div>
+    <div class="field-wrap"><div class="field-label">¿Qué pensamiento te está dando vueltas?</div><textarea class="input" id="pens-pensamiento" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <div class="field-wrap"><div class="field-label">¿Qué tan fuerte lo sentís? (0 a 100)</div><input type="number" class="input" id="pens-certeza" min="0" max="100" placeholder="Ej: 80"></div>
+    <div class="field-wrap"><div class="field-label">¿Qué evidencia hay A FAVOR de este pensamiento?</div><textarea class="input" id="pens-favor" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <div class="field-wrap"><div class="field-label">¿Qué evidencia hay EN CONTRA?</div><textarea class="input" id="pens-contra" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <div class="field-wrap"><div class="field-label">¿Qué le dirías a un amigo que te cuenta esto mismo?</div><textarea class="input" id="pens-amigo" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <div class="field-wrap"><div class="field-label">Un pensamiento más equilibrado</div><textarea class="input" id="pens-alternativa" rows="2" style="width:100%;resize:vertical"></textarea></div>
+    <button class="btn-primary" onclick="guardarPensamiento()">Guardar</button>
+    <button class="btn-ghost" onclick="cerrarModal('pensamiento')">Cancelar</button>
   </div>
 </div>
 
@@ -717,6 +824,7 @@ const PAGE_RENDER_FN={
   home:renderHome, actividad:renderActividad, cuerpo:renderCuerpo, nutricion:renderNutricion,
   mas:renderMas, rutinas:renderRutinas, 'rutina-detalle':renderRutinaDetalle,
   agenda:renderAgenda, lugares:renderLugares, 'sesion-gps':()=>{},
+  bienestar:renderBienestar, respiracion:()=>{}, grounding:iniciarGrounding,
 };
 function navGo(page,btn){
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -745,6 +853,183 @@ function renderMas(){
   const turnosProx=(DB.turnos||[]).filter(t=>t.fecha>=fechaHoy()).length;
   const sub=document.getElementById('mas-agenda-sub');
   if(sub) sub.textContent = turnosProx? turnosProx+' turno'+(turnosProx!==1?'s':'')+' próximo'+(turnosProx!==1?'s':'') : 'Turnos médicos y avisos';
+}
+
+// ═══════════════════════════════════════════════════════════════
+// BIENESTAR EMOCIONAL — diario, ánimo y ejercicios de apoyo (no reemplaza a un profesional)
+// ═══════════════════════════════════════════════════════════════
+const ANIMOS=[{v:1,e:'😢'},{v:2,e:'😕'},{v:3,e:'😐'},{v:4,e:'🙂'},{v:5,e:'😄'}];
+let _animoSel=0;
+function renderAnimoPills(containerId){
+  const el=document.getElementById(containerId);
+  if(!el) return;
+  el.innerHTML=ANIMOS.map(a=>
+    '<button class="pill '+(a.v===_animoSel?'sel':'')+'" style="font-size:20px;padding:10px 16px" onclick="elegirAnimo('+a.v+',\''+containerId+'\')">'+a.e+'</button>'
+  ).join('');
+}
+function elegirAnimo(v, containerId){
+  _animoSel=v;
+  renderAnimoPills(containerId);
+  if(containerId==='bienestar-animo-pills') registrarAnimoRapido(v);
+}
+function _buscarEntradaDiarioHoy(){ const hoy=fechaHoy(); return (DB.diario||[]).find(d=>d.fecha===hoy) || null; }
+function _obtenerOCrearEntradaDiarioHoy(){
+  const hoy=fechaHoy();
+  if(!DB.diario) DB.diario=[];
+  let entrada=DB.diario.find(d=>d.fecha===hoy);
+  if(!entrada){ entrada={id:uid(), fecha:hoy, animo:null, texto:'', pregunta:'', creadoEn:Date.now()}; DB.diario.push(entrada); }
+  return entrada;
+}
+async function registrarAnimoRapido(v){
+  const entrada=_obtenerOCrearEntradaDiarioHoy();
+  entrada.animo=v;
+  await save();
+  renderBienestar();
+}
+const PREGUNTAS_DIARIO=[
+  '¿Qué fue lo más difícil de hoy?',
+  '¿Qué es algo bueno que pasó, por chico que sea?',
+  '¿Hay algo que te gustaría decirle a alguien pero no pudiste?',
+  '¿Cómo te gustaría sentirte mañana?',
+  '¿Qué necesitás ahora mismo?',
+  '¿De qué estás agradecido hoy?',
+];
+let _preguntaDiarioIdx=0;
+function cambiarPreguntaDiario(){
+  _preguntaDiarioIdx=(_preguntaDiarioIdx+1)%PREGUNTAS_DIARIO.length;
+  document.getElementById('diario-pregunta').textContent=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
+}
+function abrirModalDiario(){
+  const entrada=_buscarEntradaDiarioHoy();
+  _animoSel = entrada && entrada.animo ? entrada.animo : 0;
+  renderAnimoPills('diario-animo-pills');
+  _preguntaDiarioIdx=Math.floor(Math.random()*PREGUNTAS_DIARIO.length);
+  document.getElementById('diario-pregunta').textContent=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
+  document.getElementById('diario-texto').value = entrada ? (entrada.texto||'') : '';
+  abrirModal('diario');
+}
+async function guardarDiario(){
+  const entrada=_obtenerOCrearEntradaDiarioHoy();
+  if(_animoSel) entrada.animo=_animoSel;
+  entrada.texto=(document.getElementById('diario-texto').value||'').trim();
+  entrada.pregunta=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
+  entrada.actualizadoEn=Date.now();
+  await save();
+  cerrarModal('diario');
+  renderBienestar();
+  toast('✍️ Guardado');
+}
+function diarioRowHtml(d){
+  const emoji=(ANIMOS.find(a=>a.v===d.animo)||{}).e||'✍️';
+  const preview=(d.texto||'').slice(0,70)+((d.texto||'').length>70?'…':'');
+  return '<div class="row-item static"><div class="row-icon" style="background:rgba(168,85,247,.15)">'+emoji+'</div><div class="row-main"><div class="row-title">'+fmtFecha(d.fecha)+'</div><div class="row-sub">'+esc(preview)+'</div></div></div>';
+}
+function dibujarChartAnimo(){
+  const canvas=document.getElementById('bienestar-chart');
+  if(!canvas) return;
+  const ctx=canvas.getContext('2d');
+  ctx.clearRect(0,0,canvas.width,canvas.height);
+  const entradas=[...(DB.diario||[])].filter(d=>d.animo).sort((a,b)=>a.fecha.localeCompare(b.fecha)).slice(-30);
+  if(entradas.length<1) return;
+  const pad=24, w=canvas.width-2*pad, h=canvas.height-2*pad;
+  ctx.strokeStyle='#a855f7'; ctx.lineWidth=2.5; ctx.lineJoin='round';
+  ctx.beginPath();
+  entradas.forEach((d,i)=>{
+    const x=pad+(entradas.length>1?(i/(entradas.length-1))*w:w/2);
+    const y=pad+h-((d.animo-1)/4)*h;
+    if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y);
+  });
+  ctx.stroke();
+  ctx.fillStyle='#a855f7';
+  entradas.forEach((d,i)=>{
+    const x=pad+(entradas.length>1?(i/(entradas.length-1))*w:w/2);
+    const y=pad+h-((d.animo-1)/4)*h;
+    ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill();
+  });
+}
+function renderBienestar(){
+  const hoy=_buscarEntradaDiarioHoy();
+  _animoSel = hoy && hoy.animo ? hoy.animo : 0;
+  renderAnimoPills('bienestar-animo-pills');
+  dibujarChartAnimo();
+  const historial=[...(DB.diario||[])].filter(d=>d.texto).sort((a,b)=>b.fecha.localeCompare(a.fecha)).slice(0,20);
+  document.getElementById('bienestar-historial').innerHTML=historial.length? historial.map(diarioRowHtml).join('') : '<div class="empty"><div class="empty-sub">Todavía no escribiste nada</div></div>';
+}
+// ── respiración guiada (caja 4-4-4-4) ──
+let _respTimer=null, _respFase=0, _respCiclos=0, _respActivo=false;
+const RESP_FASES=[
+  {nombre:'Inhalá', duracion:4000, clase:'inhalar'},
+  {nombre:'Sostené', duracion:4000, clase:'inhalar'},
+  {nombre:'Exhalá', duracion:4000, clase:'exhalar'},
+  {nombre:'Sostené', duracion:4000, clase:''},
+];
+function toggleRespiracion(){ if(_respActivo) detenerRespiracion(); else iniciarRespiracion(); }
+function iniciarRespiracion(){
+  _respActivo=true; _respFase=0; _respCiclos=0;
+  document.getElementById('resp-btn').textContent='⏸️ Parar';
+  _cicloRespiracion();
+}
+function _cicloRespiracion(){
+  if(!_respActivo) return;
+  const fase=RESP_FASES[_respFase];
+  const circulo=document.getElementById('resp-circulo');
+  if(circulo) circulo.className='resp-circulo '+fase.clase;
+  const texto=document.getElementById('resp-texto'); if(texto) texto.textContent=fase.nombre;
+  const ciclos=document.getElementById('resp-ciclos'); if(ciclos) ciclos.textContent='Ciclo '+(_respCiclos+1);
+  _respTimer=setTimeout(()=>{
+    _respFase=(_respFase+1)%RESP_FASES.length;
+    if(_respFase===0) _respCiclos++;
+    _cicloRespiracion();
+  }, fase.duracion);
+}
+function detenerRespiracion(){
+  _respActivo=false;
+  if(_respTimer){ clearTimeout(_respTimer); _respTimer=null; }
+  const circulo=document.getElementById('resp-circulo'); if(circulo) circulo.className='resp-circulo';
+  const texto=document.getElementById('resp-texto'); if(texto) texto.textContent='Tocá empezar';
+  const ciclos=document.getElementById('resp-ciclos'); if(ciclos) ciclos.textContent='';
+  const btn=document.getElementById('resp-btn'); if(btn) btn.textContent='▶️ Empezar';
+}
+// ── grounding 5-4-3-2-1 ──
+const GROUNDING_PASOS=[
+  '5 cosas que podés VER a tu alrededor',
+  '4 cosas que podés TOCAR',
+  '3 cosas que podés ESCUCHAR',
+  '2 cosas que podés OLER',
+  '1 cosa que podés SABOREAR',
+];
+let _groundingPaso=0;
+function iniciarGrounding(){ _groundingPaso=0; _renderPasoGrounding(); }
+function _renderPasoGrounding(){
+  document.getElementById('grounding-instruccion').textContent='Nombrá '+GROUNDING_PASOS[_groundingPaso];
+  document.getElementById('grounding-texto').value='';
+  document.getElementById('grounding-btn').textContent = _groundingPaso<GROUNDING_PASOS.length-1 ? 'Siguiente →' : '✅ Terminar';
+}
+function siguientePasoGrounding(){
+  if(_groundingPaso<GROUNDING_PASOS.length-1){ _groundingPaso++; _renderPasoGrounding(); }
+  else { toast('🌱 Bien hecho'); navGo('bienestar'); }
+}
+// ── cuestionar un pensamiento (registro estilo TCC) ──
+function abrirModalPensamiento(){
+  ['pens-pensamiento','pens-certeza','pens-favor','pens-contra','pens-amigo','pens-alternativa'].forEach(id=>{ document.getElementById(id).value=''; });
+  abrirModal('pensamiento');
+}
+async function guardarPensamiento(){
+  const pensamiento=(document.getElementById('pens-pensamiento').value||'').trim();
+  if(!pensamiento){ toast('⚠️ Escribí el pensamiento'); return; }
+  const registro={
+    id:uid(), fecha:Date.now(), pensamiento,
+    certeza: parseInt(document.getElementById('pens-certeza').value)||null,
+    evidenciaFavor:(document.getElementById('pens-favor').value||'').trim(),
+    evidenciaContra:(document.getElementById('pens-contra').value||'').trim(),
+    consejoAmigo:(document.getElementById('pens-amigo').value||'').trim(),
+    alternativa:(document.getElementById('pens-alternativa').value||'').trim(),
+  };
+  if(!DB.pensamientos) DB.pensamientos=[];
+  DB.pensamientos.push(registro);
+  await save();
+  cerrarModal('pensamiento');
+  toast('💭 Guardado');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1691,21 +1976,68 @@ async function exportarBackup(){
   await save();
   toast('📦 Backup exportado');
 }
+// Fusiona dbEntrante DENTRO de dbActual: agrega lo nuevo por id, nunca borra ni pisa lo que ya existe.
+// Devuelve la cantidad de registros nuevos que se sumaron.
+function _fusionarDB(dbActual, dbEntrante){
+  let agregados=0;
+  const camposArray=['sesiones','mediciones','comidas','dietas','rutinas','turnos','avisos','diario','pensamientos'];
+  camposArray.forEach(campo=>{
+    if(!Array.isArray(dbActual[campo])) dbActual[campo]=[];
+    if(!Array.isArray(dbEntrante[campo])) return;
+    const idsActuales=new Set(dbActual[campo].map(r=>r.id));
+    dbEntrante[campo].forEach(r=>{
+      if(r&&r.id&&!idsActuales.has(r.id)){ dbActual[campo].push(r); idsActuales.add(r.id); agregados++; }
+    });
+  });
+  if(dbEntrante.hidratacion){
+    if(!dbActual.hidratacion) dbActual.hidratacion={};
+    Object.keys(dbEntrante.hidratacion).forEach(fecha=>{
+      if(!(fecha in dbActual.hidratacion)){ dbActual.hidratacion[fecha]=dbEntrante.hidratacion[fecha]; agregados++; }
+    });
+  }
+  if(dbEntrante.perfil){
+    if(!dbActual.perfil) dbActual.perfil={nombre:'',edad:null,altura:null};
+    if(!dbActual.perfil.nombre&&dbEntrante.perfil.nombre) dbActual.perfil.nombre=dbEntrante.perfil.nombre;
+    if(dbActual.perfil.edad==null&&dbEntrante.perfil.edad!=null) dbActual.perfil.edad=dbEntrante.perfil.edad;
+    if(dbActual.perfil.altura==null&&dbEntrante.perfil.altura!=null) dbActual.perfil.altura=dbEntrante.perfil.altura;
+  }
+  return agregados;
+}
+let _backupPendiente=null;
 function importarBackup(e){
   const file=e.target.files[0];
-  if(!file) return;
+  if(!file){ return; }
   const reader=new FileReader();
-  reader.onload=async(ev)=>{
+  reader.onload=(ev)=>{
     try{
-      const paquete=JSON.parse(ev.target.result);
-      if(!confirm('Esto va a reemplazar todos tus datos actuales por los del backup. ¿Continuar?')) return;
-      localStorage.setItem('figsalud_salt', paquete.salt);
-      localStorage.setItem('figsalud_blob', JSON.stringify(paquete.blob));
-      toast('✅ Backup importado — ingresá con tu contraseña');
-      cerrarSesion();
-    }catch(err){ toast('❌ Archivo inválido'); e.target.value=''; }
+      _backupPendiente=JSON.parse(ev.target.result);
+      document.getElementById('imp-pass').value='';
+      document.getElementById('imp-err').style.display='none';
+      abrirModal('importar-backup');
+    }catch(err){ toast('❌ Archivo inválido'); }
+    finally{ e.target.value=''; }
   };
   reader.readAsText(file);
+}
+async function confirmarImportarBackup(){
+  const errEl=document.getElementById('imp-err');
+  errEl.style.display='none';
+  if(!_backupPendiente){ cerrarModal('importar-backup'); return; }
+  const pass=document.getElementById('imp-pass').value;
+  if(!pass){ errEl.textContent='Ingresá la contraseña'; errEl.style.display='block'; return; }
+  try{
+    const keyEntrante=await _deriveKey(pass, _backupPendiente.salt);
+    const dbEntrante=await _decryptJSON(_backupPendiente.blob, keyEntrante);
+    const agregados=_fusionarDB(DB, dbEntrante);
+    await save();
+    _backupPendiente=null;
+    cerrarModal('importar-backup');
+    refrescarPaginaActual();
+    toast(agregados>0 ? '✅ Se sumaron '+agregados+' registros nuevos' : 'ℹ️ Ya tenías todo lo de ese backup');
+  }catch(err){
+    errEl.textContent='Contraseña incorrecta para ese backup';
+    errEl.style.display='block';
+  }
 }
 
 // ═══════════════════════════════════════════════════════════════
