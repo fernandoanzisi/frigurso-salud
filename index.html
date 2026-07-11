@@ -322,6 +322,20 @@
   <div class="modal">
     <div class="modal-title" id="sm-titulo">Registrar sesión</div>
     <div class="field-wrap"><div class="field-label">Duración (minutos)</div><input type="number" class="input" id="sm-duracion" placeholder="Ej: 45"></div>
+    <div class="field-wrap">
+      <div class="field-label">Pulso antes de entrenar (opcional)</div>
+      <div style="display:flex;gap:8px">
+        <input type="number" class="input" id="sm-pulso-antes" placeholder="lpm">
+        <button class="btn-secondary" style="width:auto;padding:13px 16px;margin:0;white-space:nowrap" onclick="cerrarModal('sesion-manual');abrirMedicionCamara('sm-pulso-antes')">📷</button>
+      </div>
+    </div>
+    <div class="field-wrap">
+      <div class="field-label">Pulso después de entrenar (opcional)</div>
+      <div style="display:flex;gap:8px">
+        <input type="number" class="input" id="sm-pulso-despues" placeholder="lpm">
+        <button class="btn-secondary" style="width:auto;padding:13px 16px;margin:0;white-space:nowrap" onclick="cerrarModal('sesion-manual');abrirMedicionCamara('sm-pulso-despues')">📷</button>
+      </div>
+    </div>
     <div class="field-wrap"><div class="field-label">Notas (opcional)</div><input class="input" id="sm-notas" placeholder="Cómo te sentiste, detalles..."></div>
     <button class="btn-primary" onclick="guardarSesionManual()">Guardar</button>
     <button class="btn-ghost" onclick="cerrarModal('sesion-manual')">Cancelar</button>
@@ -343,7 +357,7 @@
   <div class="modal">
     <div class="modal-title" id="med-titulo">Registrar medición</div>
     <div class="field-wrap" id="med-sensor-wrap">
-      <button class="btn-secondary" id="btn-medir-camara" style="display:none" onclick="cerrarModal('medicion');abrirMedicionCamara()">📷 Medir con la cámara</button>
+      <button class="btn-secondary" id="btn-medir-camara" style="display:none" onclick="cerrarModal('medicion');abrirMedicionCamara('med-valor1')">📷 Medir con la cámara</button>
       <button class="btn-secondary" id="btn-medir-bluetooth" style="display:none" onclick="conectarDispositivoBluetooth()">🔵 Conectar dispositivo Bluetooth</button>
     </div>
     <div class="field-wrap" id="med-valor1-wrap"><div class="field-label" id="med-valor1-label">Valor</div><input type="number" step="0.1" class="input" id="med-valor1"></div>
@@ -855,13 +869,18 @@ function abrirModalSesionManual(deporte){
   document.getElementById('sm-titulo').textContent='Registrar '+deporte.nombre;
   document.getElementById('sm-duracion').value='';
   document.getElementById('sm-notas').value='';
+  document.getElementById('sm-pulso-antes').value='';
+  document.getElementById('sm-pulso-despues').value='';
   abrirModal('sesion-manual');
 }
 async function guardarSesionManual(){
   const duracion=parseFloat(document.getElementById('sm-duracion').value);
   if(!duracion||duracion<=0){ toast('⚠️ Ingresá una duración válida'); return; }
   const notas=(document.getElementById('sm-notas').value||'').trim();
-  const sesion={id:uid(), deporteId:_deporteManualActual.id, deporteNombre:_deporteManualActual.nombre, fecha:Date.now(), duracionMin:duracion, distanciaKm:null, ruta:null, notas};
+  const pulsoAntesVal=parseFloat(document.getElementById('sm-pulso-antes').value);
+  const pulsoDespuesVal=parseFloat(document.getElementById('sm-pulso-despues').value);
+  const sesion={id:uid(), deporteId:_deporteManualActual.id, deporteNombre:_deporteManualActual.nombre, fecha:Date.now(), duracionMin:duracion, distanciaKm:null, ruta:null, notas,
+    pulsoAntes: isNaN(pulsoAntesVal)?null:pulsoAntesVal, pulsoDespues: isNaN(pulsoDespuesVal)?null:pulsoDespuesVal};
   if(!DB.sesiones) DB.sesiones=[];
   DB.sesiones.push(sesion);
   await save();
@@ -953,6 +972,8 @@ function abrirDetalleSesion(id){
   let html='<div class="kpi-grid" style="padding:0">'+
     '<div class="kpi-box"><div class="kpi-val">'+Math.round(s.duracionMin)+' min</div><div class="kpi-lbl">Duración</div></div>'+
     (s.distanciaKm?'<div class="kpi-box"><div class="kpi-val">'+s.distanciaKm+' km</div><div class="kpi-lbl">Distancia</div></div>':'')+
+    (s.pulsoAntes?'<div class="kpi-box"><div class="kpi-val">'+s.pulsoAntes+' lpm</div><div class="kpi-lbl">Pulso antes</div></div>':'')+
+    (s.pulsoDespues?'<div class="kpi-box"><div class="kpi-val">'+s.pulsoDespues+' lpm</div><div class="kpi-lbl">Pulso después</div></div>':'')+
   '</div>';
   if(s.notas) html+='<div class="card">'+esc(s.notas)+'</div>';
   document.getElementById('sd-contenido').innerHTML=html;
@@ -1107,7 +1128,9 @@ async function guardarMedicion(){
 // ═══════════════════════════════════════════════════════════════
 let _pulsoCamaraStream=null, _pulsoCamaraRAF=null, _pulsoCamaraMuestras=[], _pulsoCamaraInicio=0, _pulsoCamaraResultado=null;
 const PULSO_CAMARA_DURACION_MS=15000;
-function abrirMedicionCamara(){
+let _pulsoCamaraDestino='med-valor1'; // a que input va el resultado: la medicion de Cuerpo, o pulso antes/despues de una sesion
+function abrirMedicionCamara(destino){
+  _pulsoCamaraDestino = destino || 'med-valor1';
   document.getElementById('pulso-camara-bpm').textContent='--';
   document.getElementById('pulso-camara-estado').textContent='Tocá "Iniciar" para empezar';
   document.getElementById('btn-iniciar-medicion-camara').style.display='';
@@ -1229,9 +1252,10 @@ function _finalizarMedicionCamara(){
 }
 function usarResultadoCamara(){
   if(_pulsoCamaraResultado==null) return;
-  document.getElementById('med-valor1').value=_pulsoCamaraResultado;
+  const destinoEl=document.getElementById(_pulsoCamaraDestino);
+  if(destinoEl) destinoEl.value=_pulsoCamaraResultado;
   cerrarModalCamara();
-  abrirModal('medicion');
+  abrirModal(_pulsoCamaraDestino==='med-valor1' ? 'medicion' : 'sesion-manual');
   toast('💓 '+_pulsoCamaraResultado+' lpm cargado — revisá y guardá');
 }
 
