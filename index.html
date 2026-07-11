@@ -217,6 +217,7 @@
 <div class="page" id="page-cuerpo">
   <div class="header"><div style="flex:1"><div class="header-title">❤️ Cuerpo</div><div class="header-sub">Peso, presión, glucosa y más</div></div></div>
   <div class="section pill-row" id="cuerpo-tipos"></div>
+  <div class="section" id="cuerpo-alerta-patron" style="display:none;margin-top:10px"></div>
   <div class="section" style="margin-top:10px">
     <div class="chart-canvas-wrap"><canvas id="cuerpo-chart" width="600" height="220" style="width:100%;display:block"></canvas></div>
     <button class="btn-primary" onclick="abrirModalMedicion()">+ Registrar medición</button>
@@ -341,12 +342,33 @@
 <div class="modal-overlay" id="modal-medicion" onclick="if(event.target===this)cerrarModal('medicion')">
   <div class="modal">
     <div class="modal-title" id="med-titulo">Registrar medición</div>
+    <div class="field-wrap" id="med-sensor-wrap">
+      <button class="btn-secondary" id="btn-medir-camara" style="display:none" onclick="cerrarModal('medicion');abrirMedicionCamara()">📷 Medir con la cámara</button>
+      <button class="btn-secondary" id="btn-medir-bluetooth" style="display:none" onclick="conectarDispositivoBluetooth()">🔵 Conectar dispositivo Bluetooth</button>
+    </div>
     <div class="field-wrap" id="med-valor1-wrap"><div class="field-label" id="med-valor1-label">Valor</div><input type="number" step="0.1" class="input" id="med-valor1"></div>
     <div class="field-wrap" id="med-valor2-wrap" style="display:none"><div class="field-label">Diastólica</div><input type="number" class="input" id="med-valor2"></div>
     <div class="field-wrap"><div class="field-label">Fecha</div><input type="date" class="input" id="med-fecha"></div>
     <div class="field-wrap"><div class="field-label">Notas (opcional)</div><input class="input" id="med-notas"></div>
     <button class="btn-primary" onclick="guardarMedicion()">Guardar</button>
     <button class="btn-ghost" onclick="cerrarModal('medicion')">Cancelar</button>
+  </div>
+</div>
+
+<!-- MODAL: MEDIR PULSO CON LA CAMARA -->
+<div class="modal-overlay" id="modal-pulso-camara" onclick="if(event.target===this)cerrarModalCamara()">
+  <div class="modal">
+    <div class="modal-title">📷 Medir pulso con la cámara</div>
+    <div class="card" style="font-size:12px;color:var(--text3);margin-bottom:12px">Apoyá la yema del dedo tapando bien la cámara trasera (y el flash si tiene). Quedate quieto durante toda la medición.</div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:16px 0">
+      <div id="pulso-camara-bpm" style="font-size:52px;font-weight:900;font-family:var(--mono);color:var(--accent)">--</div>
+    </div>
+    <div id="pulso-camara-estado" style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:14px">Tocá "Iniciar" para empezar</div>
+    <video id="pulso-camara-video" playsinline muted style="display:none"></video>
+    <canvas id="pulso-camara-canvas" style="display:none"></canvas>
+    <button class="btn-primary" id="btn-iniciar-medicion-camara" onclick="iniciarMedicionCamara()">▶️ Iniciar</button>
+    <button class="btn-primary" id="btn-usar-medicion-camara" style="display:none" onclick="usarResultadoCamara()">✅ Usar este valor</button>
+    <button class="btn-ghost" onclick="cerrarModalCamara()">Cancelar</button>
   </div>
 </div>
 
@@ -1008,10 +1030,40 @@ function dibujarChartMediciones(mediciones){
     ctx.beginPath(); ctx.arc(x,y,3.5,0,Math.PI*2); ctx.fill();
   });
 }
+// analiza los ULTIMOS VALORES REALES ya cargados (a mano o por Bluetooth) — nunca inventa
+// datos — y avisa si el patron es preocupante, tipo "tus ultimas 3 mediciones estuvieron
+// altas, consultá a un médico". Es la forma responsable de dar una alerta: sobre datos
+// reales, no con un numero de presion/glucosa inventado por camara (eso no es confiable
+// medicamente y no lo implementamos a proposito).
+function _detectarPatronPreocupante(tipo){
+  if(tipo==='peso') return null; // no aplica clasificacion de riesgo al peso
+  const mediciones=(DB.mediciones||[]).filter(m=>m.tipo===tipo).sort((a,b)=>b.fecha-a.fecha).slice(0,5);
+  if(mediciones.length<3) return null;
+  const ultimas3=mediciones.slice(0,3);
+  const clases=ultimas3.map(m=>clasificarMedicion(m.tipo,m.valor1,m.valor2));
+  const nombre=MEDICION_TIPOS[tipo].nombre.toLowerCase();
+  if(clases.every(c=>c==='bad')){
+    return {nivel:'bad', texto:'Tus últimas 3 mediciones de '+nombre+' estuvieron en rango alto — no es algo normal ni puntual. Te recomendamos consultar a un profesional de la salud.'};
+  }
+  if(clases.every(c=>c==='bad'||c==='warn')){
+    return {nivel:'warn', texto:'Varias de tus últimas mediciones de '+nombre+' estuvieron fuera del rango de referencia — vale la pena prestarle atención y comentarlo en tu próximo control.'};
+  }
+  return null;
+}
 function renderCuerpo(){
   renderTiposMedicionPills();
   const mediciones=(DB.mediciones||[]).filter(m=>m.tipo===_tipoMedicionSel).sort((a,b)=>a.fecha-b.fecha);
   dibujarChartMediciones(mediciones);
+  const alertaEl=document.getElementById('cuerpo-alerta-patron');
+  if(alertaEl){
+    const alerta=_detectarPatronPreocupante(_tipoMedicionSel);
+    if(alerta){
+      alertaEl.style.display='';
+      alertaEl.innerHTML='<div class="card" style="display:flex;align-items:center;gap:12px;border-color:'+(alerta.nivel==='bad'?'rgba(239,68,68,.4)':'rgba(245,158,11,.4)')+'">'+
+        '<div class="row-icon" style="background:'+(alerta.nivel==='bad'?'rgba(239,68,68,.15)':'rgba(245,158,11,.15)')+'">⚠️</div>'+
+        '<div class="row-main"><div class="row-title" style="white-space:normal;font-size:13px">'+esc(alerta.texto)+'</div></div></div>';
+    } else { alertaEl.style.display='none'; alertaEl.innerHTML=''; }
+  }
   const historialOrdenado=[...mediciones].reverse();
   document.getElementById('cuerpo-historial').innerHTML=historialOrdenado.length? historialOrdenado.map(medicionRowHtml).join('') : '<div class="empty"><div class="empty-sub">Todavía no registraste '+MEDICION_TIPOS[_tipoMedicionSel].nombre.toLowerCase()+'</div></div>';
 }
@@ -1024,6 +1076,8 @@ function abrirModalMedicion(){
   document.getElementById('med-valor2').value='';
   document.getElementById('med-fecha').value=fechaHoy();
   document.getElementById('med-notas').value='';
+  document.getElementById('btn-medir-camara').style.display = _tipoMedicionSel==='pulso' ? '' : 'none';
+  document.getElementById('btn-medir-bluetooth').style.display = BLE_PERFILES[_tipoMedicionSel] ? '' : 'none';
   abrirModal('medicion');
 }
 async function guardarMedicion(){
@@ -1045,6 +1099,253 @@ async function guardarMedicion(){
   renderCuerpo();
   if(_pagActual==='home') renderHome();
   toast('✅ Guardado');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// PULSO POR CÁMARA (fotopletismografía real: detecta el color de la sangre
+// en la yema del dedo latido a latido, con la cámara trasera + flash) ──
+// ═══════════════════════════════════════════════════════════════
+let _pulsoCamaraStream=null, _pulsoCamaraRAF=null, _pulsoCamaraMuestras=[], _pulsoCamaraInicio=0, _pulsoCamaraResultado=null;
+const PULSO_CAMARA_DURACION_MS=15000;
+function abrirMedicionCamara(){
+  document.getElementById('pulso-camara-bpm').textContent='--';
+  document.getElementById('pulso-camara-estado').textContent='Tocá "Iniciar" para empezar';
+  document.getElementById('btn-iniciar-medicion-camara').style.display='';
+  document.getElementById('btn-usar-medicion-camara').style.display='none';
+  _pulsoCamaraResultado=null;
+  abrirModal('pulso-camara');
+}
+function cerrarModalCamara(){
+  _detenerCamaraPulso();
+  cerrarModal('pulso-camara');
+}
+function _detenerCamaraPulso(){
+  if(_pulsoCamaraRAF){ cancelAnimationFrame(_pulsoCamaraRAF); _pulsoCamaraRAF=null; }
+  if(_pulsoCamaraStream){ _pulsoCamaraStream.getTracks().forEach(t=>t.stop()); _pulsoCamaraStream=null; }
+}
+async function iniciarMedicionCamara(){
+  const estadoEl=document.getElementById('pulso-camara-estado');
+  const btnIniciar=document.getElementById('btn-iniciar-medicion-camara');
+  if(!navigator.mediaDevices || !navigator.mediaDevices.getUserMedia){
+    toast('⚠️ Este navegador no permite usar la cámara para esto');
+    return;
+  }
+  try{
+    _pulsoCamaraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
+  }catch(e){
+    toast('⚠️ No se pudo acceder a la cámara — revisá los permisos del navegador');
+    return;
+  }
+  const video=document.getElementById('pulso-camara-video');
+  video.srcObject=_pulsoCamaraStream;
+  try{ await video.play(); }catch(e){}
+  // intentamos prender el flash (torch) — mejora mucho la lectura, pero no todos los
+  // celulares/navegadores lo permiten. Si no se puede, igual medimos con luz ambiente.
+  const track=_pulsoCamaraStream.getVideoTracks()[0];
+  try{
+    const caps=track.getCapabilities ? track.getCapabilities() : {};
+    if(caps.torch) await track.applyConstraints({advanced:[{torch:true}]});
+  }catch(e){ /* sin flash, seguimos igual */ }
+
+  btnIniciar.style.display='none';
+  _pulsoCamaraMuestras=[];
+  _pulsoCamaraInicio=performance.now();
+  estadoEl.textContent='Midiendo... quedate quieto';
+
+  const canvas=document.getElementById('pulso-camara-canvas');
+  const ctx=canvas.getContext('2d');
+  canvas.width=40; canvas.height=40; // chico a proposito: solo necesitamos el promedio de color, no la imagen
+
+  function loop(){
+    const ahora=performance.now();
+    const transcurrido=ahora-_pulsoCamaraInicio;
+    if(transcurrido>=PULSO_CAMARA_DURACION_MS){ _finalizarMedicionCamara(); return; }
+    try{
+      ctx.drawImage(video,0,0,canvas.width,canvas.height);
+      const frame=ctx.getImageData(0,0,canvas.width,canvas.height).data;
+      let sumaRojo=0;
+      for(let i=0;i<frame.length;i+=4) sumaRojo+=frame[i]; // canal rojo: el que mejor refleja el pulso de sangre
+      _pulsoCamaraMuestras.push({t:transcurrido, v:sumaRojo/(frame.length/4)});
+    }catch(e){ /* si un frame puntual falla, seguimos con el siguiente sin cortar la medicion */ }
+    estadoEl.textContent='Midiendo... quedate quieto ('+Math.ceil((PULSO_CAMARA_DURACION_MS-transcurrido)/1000)+'s)';
+    _pulsoCamaraRAF=requestAnimationFrame(loop);
+  }
+  loop();
+}
+// detecta los latidos como picos en la señal de color, y calcula lpm por el intervalo promedio
+// entre picos — con suavizado y "detrend" para sacar ruido de alta frecuencia y deriva lenta
+function _calcularBPMDesdeMuestras(muestras){
+  if(muestras.length<30) return null;
+  const suavizado=muestras.map((m,i)=>{
+    const desde=Math.max(0,i-2), hasta=Math.min(muestras.length-1,i+2);
+    let suma=0, cant=0;
+    for(let j=desde;j<=hasta;j++){ suma+=muestras[j].v; cant++; }
+    return {t:m.t, v:suma/cant};
+  });
+  const VENTANA_LARGA=30;
+  const detrend=suavizado.map((m,i)=>{
+    const desde=Math.max(0,i-VENTANA_LARGA);
+    let suma=0, cant=0;
+    for(let j=desde;j<=i;j++){ suma+=suavizado[j].v; cant++; }
+    return {t:m.t, v:m.v-(suma/cant)};
+  });
+  const picos=[];
+  const MIN_SEPARACION_MS=300; // pone un techo de 200 lpm, evita contar el mismo latido 2 veces
+  for(let i=2;i<detrend.length-2;i++){
+    const p=detrend[i];
+    if(p.v>detrend[i-1].v && p.v>detrend[i+1].v && p.v>detrend[i-2].v && p.v>detrend[i+2].v && p.v>0.3){
+      if(!picos.length || (p.t-picos[picos.length-1].t)>=MIN_SEPARACION_MS) picos.push(p);
+    }
+  }
+  if(picos.length<4) return null;
+  const intervalos=[];
+  for(let i=1;i<picos.length;i++) intervalos.push(picos[i].t-picos[i-1].t);
+  const promedioIntervalo=intervalos.reduce((a,b)=>a+b,0)/intervalos.length;
+  // chequeo de calidad: un pulso real tiene intervalos bastante parejos entre si. Si son muy
+  // irregulares (dedo mal puesto, mano temblando, ruido), no confiamos en el resultado aunque
+  // matematicamente haya "picos" — mejor decir "no se pudo medir" que mostrar un numero falso.
+  const varianza=intervalos.reduce((a,b)=>a+Math.pow(b-promedioIntervalo,2),0)/intervalos.length;
+  const coefVariacion=Math.sqrt(varianza)/promedioIntervalo;
+  if(coefVariacion>0.20) return null;
+  const bpm=Math.round(60000/promedioIntervalo);
+  if(bpm<35||bpm>220) return null;
+  return bpm;
+}
+function _finalizarMedicionCamara(){
+  _detenerCamaraPulso();
+  const bpm=_calcularBPMDesdeMuestras(_pulsoCamaraMuestras);
+  const bpmEl=document.getElementById('pulso-camara-bpm');
+  const estadoEl=document.getElementById('pulso-camara-estado');
+  if(bpm){
+    bpmEl.textContent=bpm;
+    estadoEl.textContent='Listo. Si te parece razonable, tocá "Usar este valor".';
+    _pulsoCamaraResultado=bpm;
+    document.getElementById('btn-usar-medicion-camara').style.display='';
+  } else {
+    bpmEl.textContent='--';
+    estadoEl.textContent='No se pudo medir bien. Probá con más luz, presionando un poco más el dedo, y quedate bien quieto.';
+    document.getElementById('btn-iniciar-medicion-camara').style.display='';
+  }
+}
+function usarResultadoCamara(){
+  if(_pulsoCamaraResultado==null) return;
+  document.getElementById('med-valor1').value=_pulsoCamaraResultado;
+  cerrarModalCamara();
+  abrirModal('medicion');
+  toast('💓 '+_pulsoCamaraResultado+' lpm cargado — revisá y guardá');
+}
+
+// ═══════════════════════════════════════════════════════════════
+// CONEXIÓN BLUETOOTH CON APARATOS MÉDICOS REALES (tensiómetro, glucómetro,
+// termómetro, pulsómetro) que usen los perfiles GATT estándar del Bluetooth SIG —
+// funciona solo en Chrome/Android o Chrome/Edge de escritorio, NO en iPhone
+// (Apple no permite Web Bluetooth en Safari, es una limitación de ellos, no nuestra).
+// ═══════════════════════════════════════════════════════════════
+function _leerSFLOAT(dv, offset){
+  const raw=dv.getUint16(offset, true);
+  let mantissa=raw & 0x0FFF;
+  let exponente=raw >> 12;
+  if(exponente>=0x8) exponente-=0x10;
+  if(mantissa>=0x0800) mantissa-=0x1000;
+  if(mantissa===0x07FF || mantissa===0x0800) return null; // NaN / no-resultado
+  return mantissa*Math.pow(10,exponente);
+}
+function _leerFLOAT32(dv, offset){
+  const raw=dv.getUint32(offset, true);
+  let mantissa=raw & 0x00FFFFFF;
+  let exponente=raw >> 24;
+  if(exponente>=0x80) exponente-=0x100;
+  if(mantissa>=0x800000) mantissa-=0x1000000;
+  return mantissa*Math.pow(10,exponente);
+}
+const BLE_PERFILES={
+  pulso:{
+    servicio:'heart_rate', caracteristica:'heart_rate_measurement',
+    parse: dv=>{
+      const flags=dv.getUint8(0);
+      const valor = (flags & 0x1) ? dv.getUint16(1,true) : dv.getUint8(1);
+      return {valor1:valor, valor2:null};
+    }
+  },
+  presion:{
+    servicio:'blood_pressure', caracteristica:'blood_pressure_measurement',
+    parse: dv=>{
+      const flags=dv.getUint8(0);
+      let sistolica=_leerSFLOAT(dv,1), diastolica=_leerSFLOAT(dv,3);
+      if(sistolica==null||diastolica==null) return null;
+      if(flags & 0x1){ sistolica*=7.50062; diastolica*=7.50062; } // el aparato mide en kPa -> pasamos a mmHg
+      return {valor1:Math.round(sistolica), valor2:Math.round(diastolica)};
+    }
+  },
+  temperatura:{
+    servicio:'health_thermometer', caracteristica:'temperature_measurement',
+    parse: dv=>{
+      const flags=dv.getUint8(0);
+      let valor=_leerFLOAT32(dv,1);
+      if(valor==null) return null;
+      if(flags & 0x1) valor=(valor-32)/1.8; // el aparato mide en Fahrenheit -> pasamos a Celsius
+      return {valor1:Math.round(valor*10)/10, valor2:null};
+    }
+  },
+  glucosa:{
+    servicio:'glucose', caracteristica:'glucose_measurement',
+    parse: dv=>{
+      const flags=dv.getUint8(0);
+      if(!(flags & 0x2)) return null; // esta lectura no trae el valor de concentracion
+      let offset=10;
+      if(flags & 0x1) offset+=2; // hay un campo extra de "time offset"
+      const conc=_leerSFLOAT(dv,offset);
+      if(conc==null) return null;
+      const mgdl = (flags & 0x4) ? conc*18018 : conc*100000; // mol/L o kg/L -> mg/dL (unidad que usa la app)
+      return {valor1:Math.round(mgdl), valor2:null};
+    }
+  }
+};
+let _bleDevice=null, _bleCaracteristicaActiva=null;
+async function conectarDispositivoBluetooth(){
+  if(!navigator.bluetooth){
+    toast('⚠️ Tu navegador no permite conectar por Bluetooth (funciona en Chrome de Android, no en iPhone)');
+    return;
+  }
+  const perfil=BLE_PERFILES[_tipoMedicionSel];
+  if(!perfil){ toast('⚠️ Este tipo de medición no tiene un aparato Bluetooth estándar'); return; }
+  try{
+    toast('🔵 Elegí tu aparato en la lista...');
+    _bleDevice=await navigator.bluetooth.requestDevice({filters:[{services:[perfil.servicio]}]});
+    const server=await _bleDevice.gatt.connect();
+    const servicio=await server.getPrimaryService(perfil.servicio);
+    const caracteristica=await servicio.getCharacteristic(perfil.caracteristica);
+    _bleCaracteristicaActiva=caracteristica;
+    toast('🔵 Conectado — esperando la lectura del aparato...');
+    await caracteristica.startNotifications();
+    caracteristica.addEventListener('characteristicvaluechanged', _onLecturaBluetooth);
+  }catch(e){
+    if(e.name==='NotFoundError'){ toast('No se eligió ningún aparato'); }
+    else{ toast('⚠️ No se pudo conectar: '+e.message); }
+  }
+}
+function _onLecturaBluetooth(event){
+  const perfil=BLE_PERFILES[_tipoMedicionSel];
+  let resultado;
+  try{ resultado=perfil.parse(event.target.value); }catch(e){ resultado=null; }
+  if(!resultado || resultado.valor1==null || isNaN(resultado.valor1)){
+    toast('⚠️ No se pudo leer el dato del aparato — probá de nuevo');
+    return;
+  }
+  document.getElementById('med-valor1').value=resultado.valor1;
+  if(resultado.valor2!=null) document.getElementById('med-valor2').value=resultado.valor2;
+  toast('✅ Lectura recibida del aparato — revisá y guardá');
+  _desconectarBluetooth();
+}
+function _desconectarBluetooth(){
+  if(_bleCaracteristicaActiva){
+    try{ _bleCaracteristicaActiva.removeEventListener('characteristicvaluechanged', _onLecturaBluetooth); _bleCaracteristicaActiva.stopNotifications(); }catch(e){}
+    _bleCaracteristicaActiva=null;
+  }
+  if(_bleDevice && _bleDevice.gatt && _bleDevice.gatt.connected){
+    try{ _bleDevice.gatt.disconnect(); }catch(e){}
+  }
+  _bleDevice=null;
 }
 
 // ═══════════════════════════════════════════════════════════════
