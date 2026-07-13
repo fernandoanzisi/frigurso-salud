@@ -179,6 +179,7 @@
     <div style="flex:1"><div class="header-title">🩺 Salud</div><div class="header-sub" id="home-sub">Hola</div></div>
     <button class="btn-icon" onclick="navGo('mas',document.getElementById('nav-mas'))">☰</button>
   </div>
+  <div class="section" id="home-sesion-activa" style="display:none;margin-bottom:10px"></div>
   <div class="hero">
     <div class="hero-lbl">Esta semana</div>
     <div class="hero-val" id="home-hero-val">0 sesiones</div>
@@ -193,6 +194,7 @@
 <!-- ACTIVIDAD -->
 <div class="page" id="page-actividad">
   <div class="header"><div style="flex:1"><div class="header-title">🏃 Actividad</div><div class="header-sub" id="act-sub">Elegí un deporte</div></div></div>
+  <div class="section" id="act-sesion-activa" style="display:none"></div>
   <div class="section">
     <input class="input" id="act-buscar" placeholder="🔎 Buscar deporte..." oninput="renderCatalogoDeportes()">
   </div>
@@ -205,7 +207,7 @@
 <div class="page" id="page-sesion-gps">
   <div class="header">
     <button class="btn-icon" onclick="cancelarSesionGPS()">✕</button>
-    <div style="flex:1"><div class="header-title" id="gps-deporte-nombre">Corriendo</div><div class="header-sub">Seguimiento en curso</div></div>
+    <div style="flex:1"><div class="header-title" id="gps-deporte-nombre">Corriendo</div><div class="header-sub" id="gps-estado-txt">Listo para arrancar</div></div>
   </div>
   <div class="section">
     <div class="gps-canvas-wrap"><canvas id="gps-canvas" width="600" height="320" style="width:100%;display:block"></canvas></div>
@@ -215,7 +217,10 @@
       <div class="kpi-box"><div class="kpi-val" id="gps-ritmo">—</div><div class="kpi-lbl">Ritmo (min/km)</div></div>
       <div class="kpi-box"><div class="kpi-val" id="gps-puntos">0</div><div class="kpi-lbl">Puntos GPS</div></div>
     </div>
-    <button class="btn-danger" onclick="finalizarSesionGPS()">⏹ Finalizar y guardar</button>
+    <button class="btn-primary" id="btn-gps-iniciar" onclick="iniciarGPSAhora()">▶ Iniciar</button>
+    <button class="btn-secondary" id="btn-gps-pausar" style="display:none" onclick="pausarSesionGPS()">⏸ Pausar</button>
+    <button class="btn-primary" id="btn-gps-continuar" style="display:none" onclick="continuarSesionGPS()">▶ Continuar</button>
+    <button class="btn-danger" id="btn-gps-finalizar" style="display:none;margin-top:8px" onclick="finalizarSesionGPS()">⏹ Finalizar y guardar</button>
   </div>
 </div>
 
@@ -290,6 +295,7 @@
     <div class="section-title">Avisos y recordatorios</div>
     <button class="btn-secondary" onclick="abrirModalAviso()">+ Crear aviso</button>
     <div id="agenda-avisos" style="margin-top:8px"></div>
+    <div class="card" style="font-size:11px;color:var(--text3);margin-top:8px">Te avisamos con una notificación mientras tengas la app abierta, aunque esté en otra pestaña. Con el celular bloqueado o la app cerrada del todo no vamos a poder avisarte — eso necesitaría notificaciones push reales con un servidor, que esta app no tiene.</div>
   </div>
 </div>
 
@@ -384,7 +390,7 @@
 <!-- MODAL: DIARIO -->
 <div class="modal-overlay" id="modal-diario" onclick="if(event.target===this)cerrarModal('diario')">
   <div class="modal">
-    <div class="modal-title">✍️ Diario de hoy</div>
+    <div class="modal-title" id="diario-modal-titulo">✍️ Diario de hoy</div>
     <div class="field-wrap"><div class="field-label">¿Cómo te sentís?</div><div class="pill-row" id="diario-animo-pills"></div></div>
     <div class="field-wrap">
       <div class="field-label" id="diario-pregunta">¿Qué fue lo más difícil de hoy?</div>
@@ -392,6 +398,7 @@
     </div>
     <button class="btn-ghost" style="margin-top:-6px;margin-bottom:14px" onclick="cambiarPreguntaDiario()">🔄 Otra pregunta</button>
     <button class="btn-primary" onclick="guardarDiario()">Guardar</button>
+    <button class="btn-danger" id="btn-borrar-diario" style="display:none" onclick="borrarDiarioActual()">Eliminar entrada</button>
     <button class="btn-ghost" onclick="cerrarModal('diario')">Cancelar</button>
   </div>
 </div>
@@ -453,6 +460,7 @@
 <div class="modal-overlay" id="modal-sesion-detalle" onclick="if(event.target===this)cerrarModal('sesion-detalle')">
   <div class="modal">
     <div class="modal-title" id="sd-titulo">Sesión</div>
+    <div class="gps-canvas-wrap" id="sd-mapa-wrap" style="display:none"><canvas id="sd-mapa-canvas" width="600" height="260" style="width:100%;display:block"></canvas></div>
     <div id="sd-contenido"></div>
     <button class="btn-danger" onclick="borrarSesionActual()">Eliminar sesión</button>
     <button class="btn-ghost" onclick="cerrarModal('sesion-detalle')">Cerrar</button>
@@ -472,6 +480,7 @@
     <div class="field-wrap"><div class="field-label">Fecha</div><input type="date" class="input" id="med-fecha"></div>
     <div class="field-wrap"><div class="field-label">Notas (opcional)</div><input class="input" id="med-notas"></div>
     <button class="btn-primary" onclick="guardarMedicion()">Guardar</button>
+    <button class="btn-danger" id="btn-borrar-medicion" style="display:none" onclick="borrarMedicionActual()">Eliminar medición</button>
     <button class="btn-ghost" onclick="cerrarModal('medicion')">Cancelar</button>
   </div>
 </div>
@@ -496,11 +505,12 @@
 <!-- MODAL: COMIDA -->
 <div class="modal-overlay" id="modal-comida" onclick="if(event.target===this)cerrarModal('comida')">
   <div class="modal">
-    <div class="modal-title">+ Registrar comida</div>
+    <div class="modal-title" id="comida-modal-titulo">+ Registrar comida</div>
     <div class="pill-sel" id="comida-tipo-pills"></div>
     <div class="field-wrap" style="margin-top:12px"><div class="field-label">Descripción</div><input class="input" id="comida-desc" placeholder="Ej: Milanesa con ensalada"></div>
     <div class="field-wrap"><div class="field-label">Calorías estimadas (opcional)</div><input type="number" class="input" id="comida-cal"></div>
     <button class="btn-primary" onclick="guardarComida()">Guardar</button>
+    <button class="btn-danger" id="btn-borrar-comida" style="display:none" onclick="borrarComidaActual()">Eliminar comida</button>
     <button class="btn-ghost" onclick="cerrarModal('comida')">Cancelar</button>
   </div>
 </div>
@@ -771,6 +781,7 @@ function olvideContrasena(){
   initAuth();
 }
 function cerrarSesion(){
+  detenerCheckeoAvisos();
   _key=null; DB=null;
   document.getElementById('navbar').style.display='none';
   document.querySelectorAll('.page').forEach(p=>p.classList.remove('active'));
@@ -782,6 +793,7 @@ function cerrarSesion(){
 function onDesbloqueado(){
   document.getElementById('auth-screen').style.display='none';
   mostrarSplashBienvenida();
+  iniciarCheckeoAvisos();
 }
 function mostrarSplashBienvenida(){
   const nombre=(DB.perfil&&DB.perfil.nombre)||'';
@@ -823,7 +835,7 @@ let _poppingState=false;
 const PAGE_RENDER_FN={
   home:renderHome, actividad:renderActividad, cuerpo:renderCuerpo, nutricion:renderNutricion,
   mas:renderMas, rutinas:renderRutinas, 'rutina-detalle':renderRutinaDetalle,
-  agenda:renderAgenda, lugares:renderLugares, 'sesion-gps':()=>{},
+  agenda:renderAgenda, lugares:renderLugares, 'sesion-gps':renderSesionGPSPage,
   bienestar:renderBienestar, respiracion:()=>{}, grounding:iniciarGrounding,
 };
 function navGo(page,btn){
@@ -899,17 +911,23 @@ function cambiarPreguntaDiario(){
   _preguntaDiarioIdx=(_preguntaDiarioIdx+1)%PREGUNTAS_DIARIO.length;
   document.getElementById('diario-pregunta').textContent=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
 }
-function abrirModalDiario(){
-  const entrada=_buscarEntradaDiarioHoy();
+let _diarioEditandoId=null;
+function abrirModalDiario(id){
+  const entrada = id ? (DB.diario||[]).find(d=>d.id===id) : _buscarEntradaDiarioHoy();
+  _diarioEditandoId = id || null;
   _animoSel = entrada && entrada.animo ? entrada.animo : 0;
   renderAnimoPills('diario-animo-pills');
-  _preguntaDiarioIdx=Math.floor(Math.random()*PREGUNTAS_DIARIO.length);
+  const idxPregunta = entrada && entrada.pregunta ? PREGUNTAS_DIARIO.indexOf(entrada.pregunta) : -1;
+  _preguntaDiarioIdx = idxPregunta>=0 ? idxPregunta : Math.floor(Math.random()*PREGUNTAS_DIARIO.length);
   document.getElementById('diario-pregunta').textContent=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
   document.getElementById('diario-texto').value = entrada ? (entrada.texto||'') : '';
+  document.getElementById('diario-modal-titulo').textContent = entrada && id ? ('✍️ Diario — '+fmtFecha(entrada.fecha)) : '✍️ Diario de hoy';
+  document.getElementById('btn-borrar-diario').style.display = id ? '' : 'none';
   abrirModal('diario');
 }
 async function guardarDiario(){
-  const entrada=_obtenerOCrearEntradaDiarioHoy();
+  const entrada = _diarioEditandoId ? (DB.diario||[]).find(d=>d.id===_diarioEditandoId) : _obtenerOCrearEntradaDiarioHoy();
+  if(!entrada) return;
   if(_animoSel) entrada.animo=_animoSel;
   entrada.texto=(document.getElementById('diario-texto').value||'').trim();
   entrada.pregunta=PREGUNTAS_DIARIO[_preguntaDiarioIdx];
@@ -919,10 +937,19 @@ async function guardarDiario(){
   renderBienestar();
   toast('✍️ Guardado');
 }
+async function borrarDiarioActual(){
+  if(!_diarioEditandoId) return;
+  if(!confirm('¿Eliminar esta entrada del diario?')) return;
+  DB.diario=(DB.diario||[]).filter(d=>d.id!==_diarioEditandoId);
+  await save();
+  cerrarModal('diario');
+  renderBienestar();
+  toast('🗑 Eliminada');
+}
 function diarioRowHtml(d){
   const emoji=(ANIMOS.find(a=>a.v===d.animo)||{}).e||'✍️';
   const preview=(d.texto||'').slice(0,70)+((d.texto||'').length>70?'…':'');
-  return '<div class="row-item static"><div class="row-icon" style="background:rgba(168,85,247,.15)">'+emoji+'</div><div class="row-main"><div class="row-title">'+fmtFecha(d.fecha)+'</div><div class="row-sub">'+esc(preview)+'</div></div></div>';
+  return '<div class="row-item" onclick="abrirModalDiario(\''+d.id+'\')"><div class="row-icon" style="background:rgba(168,85,247,.15)">'+emoji+'</div><div class="row-main"><div class="row-title">'+fmtFecha(d.fecha)+'</div><div class="row-sub">'+esc(preview)+'</div></div></div>';
 }
 function dibujarChartAnimo(){
   const canvas=document.getElementById('bienestar-chart');
@@ -1037,6 +1064,7 @@ async function guardarPensamiento(){
 // ═══════════════════════════════════════════════════════════════
 function renderHome(){
   document.getElementById('home-sub').textContent=DB.perfil.nombre?('Hola, '+DB.perfil.nombre):'Hola';
+  renderBannerSesionActiva('home-sesion-activa');
   const haceUnaSemana=Date.now()-7*24*60*60*1000;
   const sesionesSemana=(DB.sesiones||[]).filter(s=>s.fecha>=haceUnaSemana);
   const minutosSemana=sesionesSemana.reduce((s,x)=>s+x.duracionMin,0);
@@ -1136,17 +1164,37 @@ function sesionRowHtml(s){
   '</div>';
 }
 function renderActividad(){
+  renderBannerSesionActiva('act-sesion-activa');
   renderCategoriasActividad();
   renderCatalogoDeportes();
   const sesiones=[...(DB.sesiones||[])].sort((a,b)=>b.fecha-a.fecha);
   document.getElementById('act-sub').textContent=sesiones.length+' sesión'+(sesiones.length!==1?'es':'')+' registrada'+(sesiones.length!==1?'s':'');
   document.getElementById('act-historial').innerHTML=sesiones.length? sesiones.slice(0,20).map(sesionRowHtml).join('') : '<div class="empty"><div class="empty-icon">🏃</div><div class="empty-text">Todavía no registraste ninguna sesión</div></div>';
 }
+// muestra un aviso en Home/Actividad si hay una sesión GPS iniciada o pausada, para volver
+// a ella con "Continuar" en vez de perderla o arrancar otra de nuevo por accidente
+function renderBannerSesionActiva(elId){
+  const el=document.getElementById(elId);
+  if(!el) return;
+  if(_gpsEstado!=='corriendo' && _gpsEstado!=='pausado'){ el.style.display='none'; el.innerHTML=''; return; }
+  el.style.display='';
+  const txt=_gpsEstado==='pausado' ? 'Pausada — tocá para continuar' : 'En curso — tocá para ver';
+  el.innerHTML='<div class="card" style="display:flex;align-items:center;gap:12px;cursor:pointer;border-color:rgba(16,185,129,.4)" onclick="navGo(\'sesion-gps\')">'+
+    '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+(_gpsDeporteActual?_gpsDeporteActual.icono:'🏃')+'</div>'+
+    '<div class="row-main"><div class="row-title">'+esc(_gpsDeporteActual?_gpsDeporteActual.nombre:'Sesión')+'</div><div class="row-sub">'+txt+'</div></div></div>';
+}
 let _deporteManualActual=null;
 function iniciarSesionDeporte(deporteId){
   const deporte=DEPORTES.find(d=>d.id===deporteId);
   if(!deporte) return;
-  if(deporte.gps) iniciarSesionGPS(deporte);
+  if(deporte.gps){
+    if(_gpsEstado==='corriendo'||_gpsEstado==='pausado'){
+      toast('⚠️ Ya tenés una sesión de '+(_gpsDeporteActual?_gpsDeporteActual.nombre:'actividad')+' en curso');
+      navGo('sesion-gps');
+      return;
+    }
+    prepararSesionGPS(deporte);
+  }
   else abrirModalSesionManual(deporte);
 }
 function abrirModalSesionManual(deporte){
@@ -1176,18 +1224,66 @@ async function guardarSesionManual(){
 }
 
 // ── GPS ──
-let _gpsWatchId=null, _gpsPuntos=[], _gpsInicio=null, _gpsDeporteActual=null, _gpsTimerInterval=null;
-function iniciarSesionGPS(deporte){
+// _gpsEstado: 'idle' (sin sesión) | 'listo' (elegida, sin arrancar) | 'corriendo' | 'pausado'
+let _gpsEstado='idle', _gpsWatchId=null, _gpsPuntos=[], _gpsInicio=null, _gpsDeporteActual=null, _gpsTimerInterval=null;
+let _gpsSegAcumulados=0, _gpsInicioSegmento=null; // tiempo en movimiento, sin contar las pausas
+function prepararSesionGPS(deporte){
   if(!navigator.geolocation){ toast('⚠️ Este dispositivo no tiene GPS disponible'); return; }
   _gpsDeporteActual=deporte;
   _gpsPuntos=[];
-  _gpsInicio=Date.now();
-  document.getElementById('gps-deporte-nombre').textContent=deporte.nombre;
+  _gpsInicio=null;
+  _gpsSegAcumulados=0;
+  _gpsInicioSegmento=null;
+  _gpsEstado='listo';
   navGo('sesion-gps');
+}
+function renderSesionGPSPage(){
+  if(_gpsEstado==='idle'||!_gpsDeporteActual){ navGo('actividad'); return; }
+  document.getElementById('gps-deporte-nombre').textContent=_gpsDeporteActual.nombre;
+  actualizarBotonesGPS();
   actualizarStatsGPS();
   dibujarRutaGPS();
+}
+function actualizarBotonesGPS(){
+  document.getElementById('btn-gps-iniciar').style.display = _gpsEstado==='listo' ? '' : 'none';
+  document.getElementById('btn-gps-pausar').style.display = _gpsEstado==='corriendo' ? '' : 'none';
+  document.getElementById('btn-gps-continuar').style.display = _gpsEstado==='pausado' ? '' : 'none';
+  document.getElementById('btn-gps-finalizar').style.display = (_gpsEstado==='corriendo'||_gpsEstado==='pausado') ? '' : 'none';
+  document.getElementById('gps-estado-txt').textContent =
+    _gpsEstado==='listo' ? 'Listo para arrancar' : _gpsEstado==='pausado' ? '⏸ Pausado' : 'Seguimiento en curso';
+}
+function _arrancarWatchGPS(){
+  _gpsInicioSegmento=Date.now();
   _gpsTimerInterval=setInterval(actualizarStatsGPS, 1000);
   _gpsWatchId=navigator.geolocation.watchPosition(_onGPSPosicion, _onGPSError, {enableHighAccuracy:true, maximumAge:1000, timeout:10000});
+}
+function _frenarWatchGPS(){
+  clearInterval(_gpsTimerInterval); _gpsTimerInterval=null;
+  if(_gpsWatchId!=null) navigator.geolocation.clearWatch(_gpsWatchId);
+  _gpsWatchId=null;
+}
+function iniciarGPSAhora(){
+  if(_gpsEstado!=='listo') return;
+  _gpsInicio=Date.now();
+  _gpsEstado='corriendo';
+  actualizarBotonesGPS();
+  actualizarStatsGPS();
+  dibujarRutaGPS();
+  _arrancarWatchGPS();
+}
+function pausarSesionGPS(){
+  if(_gpsEstado!=='corriendo') return;
+  _gpsSegAcumulados += (Date.now()-_gpsInicioSegmento)/1000;
+  _frenarWatchGPS();
+  _gpsEstado='pausado';
+  actualizarBotonesGPS();
+  actualizarStatsGPS();
+}
+function continuarSesionGPS(){
+  if(_gpsEstado!=='pausado') return;
+  _gpsEstado='corriendo';
+  actualizarBotonesGPS();
+  _arrancarWatchGPS();
 }
 function _onGPSPosicion(pos){
   _gpsPuntos.push({lat:pos.coords.latitude, lon:pos.coords.longitude, t:Date.now()});
@@ -1200,9 +1296,12 @@ function _distanciaTotalGPS(puntos){
   for(let i=1;i<puntos.length;i++) total += _haversine(puntos[i-1].lat,puntos[i-1].lon,puntos[i].lat,puntos[i].lon);
   return total;
 }
+function _segundosTranscurridosGPS(){
+  return _gpsSegAcumulados + (_gpsEstado==='corriendo' && _gpsInicioSegmento ? (Date.now()-_gpsInicioSegmento)/1000 : 0);
+}
 function actualizarStatsGPS(){
   const distKm=_distanciaTotalGPS(_gpsPuntos);
-  const segTranscurridos=(Date.now()-_gpsInicio)/1000;
+  const segTranscurridos=_segundosTranscurridosGPS();
   const min=Math.floor(segTranscurridos/60), seg=Math.floor(segTranscurridos%60);
   document.getElementById('gps-distancia').textContent=distKm.toFixed(2)+' km';
   document.getElementById('gps-tiempo').textContent=String(min).padStart(2,'0')+':'+String(seg).padStart(2,'0');
@@ -1210,42 +1309,47 @@ function actualizarStatsGPS(){
   const ritmo = distKm>0.01 ? (segTranscurridos/60)/distKm : null;
   document.getElementById('gps-ritmo').textContent = ritmo ? ritmo.toFixed(2)+' min/km' : '—';
 }
-function dibujarRutaGPS(){
-  const canvas=document.getElementById('gps-canvas');
+function dibujarRutaGPS(){ dibujarRutaEnCanvas('gps-canvas', _gpsPuntos); }
+function dibujarRutaEnCanvas(canvasId, puntos){
+  const canvas=document.getElementById(canvasId);
   const ctx=canvas.getContext('2d');
   ctx.clearRect(0,0,canvas.width,canvas.height);
-  if(_gpsPuntos.length<2) return;
-  const lats=_gpsPuntos.map(p=>p.lat), lons=_gpsPuntos.map(p=>p.lon);
+  if(!puntos || puntos.length<2) return;
+  const lats=puntos.map(p=>p.lat), lons=puntos.map(p=>p.lon);
   const minLat=Math.min(...lats), maxLat=Math.max(...lats), minLon=Math.min(...lons), maxLon=Math.max(...lons);
   const pad=20, w=canvas.width-2*pad, h=canvas.height-2*pad;
   const rangoLat=(maxLat-minLat)||0.0001, rangoLon=(maxLon-minLon)||0.0001;
   function proyectar(p){ return [pad+((p.lon-minLon)/rangoLon)*w, pad+h-((p.lat-minLat)/rangoLat)*h]; }
   ctx.strokeStyle='#10b981'; ctx.lineWidth=3; ctx.lineJoin='round'; ctx.lineCap='round';
   ctx.beginPath();
-  _gpsPuntos.forEach((p,i)=>{ const [x,y]=proyectar(p); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
+  puntos.forEach((p,i)=>{ const [x,y]=proyectar(p); if(i===0) ctx.moveTo(x,y); else ctx.lineTo(x,y); });
   ctx.stroke();
-  const [x0,y0]=proyectar(_gpsPuntos[0]);
+  const [x0,y0]=proyectar(puntos[0]);
   ctx.fillStyle='#22c55e'; ctx.beginPath(); ctx.arc(x0,y0,6,0,Math.PI*2); ctx.fill();
-  const [xn,yn]=proyectar(_gpsPuntos[_gpsPuntos.length-1]);
+  const [xn,yn]=proyectar(puntos[puntos.length-1]);
   ctx.fillStyle='#f87171'; ctx.beginPath(); ctx.arc(xn,yn,6,0,Math.PI*2); ctx.fill();
 }
+function _resetEstadoGPS(){
+  _gpsEstado='idle'; _gpsWatchId=null; _gpsPuntos=[]; _gpsInicio=null; _gpsDeporteActual=null;
+  _gpsTimerInterval=null; _gpsSegAcumulados=0; _gpsInicioSegmento=null;
+}
 async function finalizarSesionGPS(){
-  clearInterval(_gpsTimerInterval);
-  if(_gpsWatchId!=null) navigator.geolocation.clearWatch(_gpsWatchId);
+  if(_gpsEstado!=='corriendo' && _gpsEstado!=='pausado') return;
   const distKm=_distanciaTotalGPS(_gpsPuntos);
-  const segTranscurridos=(Date.now()-_gpsInicio)/1000;
-  const duracionMin=segTranscurridos/60;
+  const duracionMin=_segundosTranscurridosGPS()/60;
+  _frenarWatchGPS();
   const sesion={id:uid(), deporteId:_gpsDeporteActual.id, deporteNombre:_gpsDeporteActual.nombre, fecha:_gpsInicio, duracionMin:Math.round(duracionMin*10)/10, distanciaKm:Math.round(distKm*100)/100, ruta:_gpsPuntos.slice(), notas:''};
   if(!DB.sesiones) DB.sesiones=[];
   DB.sesiones.push(sesion);
   await save();
+  _resetEstadoGPS();
   navGo('actividad');
   toast('✅ Sesión guardada: '+sesion.distanciaKm+' km');
 }
 function cancelarSesionGPS(){
   if(!confirm('¿Cancelar esta sesión sin guardarla?')) return;
-  clearInterval(_gpsTimerInterval);
-  if(_gpsWatchId!=null) navigator.geolocation.clearWatch(_gpsWatchId);
+  _frenarWatchGPS();
+  _resetEstadoGPS();
   navGo('actividad');
 }
 let _sesionDetalleId=null;
@@ -1254,6 +1358,13 @@ function abrirDetalleSesion(id){
   if(!s) return;
   _sesionDetalleId=id;
   document.getElementById('sd-titulo').textContent=s.deporteNombre;
+  const mapaWrap=document.getElementById('sd-mapa-wrap');
+  if(s.ruta && s.ruta.length>=2){
+    mapaWrap.style.display='';
+    dibujarRutaEnCanvas('sd-mapa-canvas', s.ruta);
+  } else {
+    mapaWrap.style.display='none';
+  }
   let html='<div class="kpi-grid" style="padding:0">'+
     '<div class="kpi-box"><div class="kpi-val">'+Math.round(s.duracionMin)+' min</div><div class="kpi-lbl">Duración</div></div>'+
     (s.distanciaKm?'<div class="kpi-box"><div class="kpi-val">'+s.distanciaKm+' km</div><div class="kpi-lbl">Distancia</div></div>':'')+
@@ -1307,7 +1418,7 @@ function renderTiposMedicionPills(){
 function medicionRowHtml(m){
   const clase=clasificarMedicion(m.tipo,m.valor1,m.valor2);
   const valTxt = m.tipo==='presion' ? m.valor1+'/'+m.valor2 : m.valor1;
-  return '<div class="row-item static">'+
+  return '<div class="row-item" onclick="abrirModalMedicion(\''+m.id+'\')">'+
     '<div class="row-icon" style="background:rgba(16,185,129,.15)">'+MEDICION_TIPOS[m.tipo].icono+'</div>'+
     '<div class="row-main"><div class="row-title">'+valTxt+' '+MEDICION_TIPOS[m.tipo].unidad+'</div><div class="row-sub">'+fmtFechaHora(m.fecha)+(m.notas?' · '+esc(m.notas):'')+'</div></div>'+
     (clase?'<div class="row-amt"><div class="row-amt-val '+clase+'">●</div></div>':'')+
@@ -1373,23 +1484,30 @@ function renderCuerpo(){
   const historialOrdenado=[...mediciones].reverse();
   document.getElementById('cuerpo-historial').innerHTML=historialOrdenado.length? historialOrdenado.map(medicionRowHtml).join('') : '<div class="empty"><div class="empty-sub">Todavía no registraste '+MEDICION_TIPOS[_tipoMedicionSel].nombre.toLowerCase()+'</div></div>';
 }
-function abrirModalMedicion(){
-  const tipo=MEDICION_TIPOS[_tipoMedicionSel];
-  document.getElementById('med-titulo').textContent='Registrar '+tipo.nombre;
+function fechaISODesdeTs(ts){ const d=new Date(ts); return d.getFullYear()+'-'+String(d.getMonth()+1).padStart(2,'0')+'-'+String(d.getDate()).padStart(2,'0'); }
+let _medicionEditandoId=null;
+function abrirModalMedicion(id){
+  const medicion = id ? (DB.mediciones||[]).find(m=>m.id===id) : null;
+  _medicionEditandoId = id || null;
+  const tipoKey = medicion ? medicion.tipo : _tipoMedicionSel;
+  const tipo=MEDICION_TIPOS[tipoKey];
+  document.getElementById('med-titulo').textContent=(medicion?'Editar ':'Registrar ')+tipo.nombre;
   document.getElementById('med-valor1-label').textContent=(tipo.doble?'Sistólica':'Valor')+' ('+tipo.unidad+')';
   document.getElementById('med-valor2-wrap').style.display=tipo.doble?'block':'none';
-  document.getElementById('med-valor1').value='';
-  document.getElementById('med-valor2').value='';
-  document.getElementById('med-fecha').value=fechaHoy();
-  document.getElementById('med-notas').value='';
-  document.getElementById('btn-medir-camara').style.display = _tipoMedicionSel==='pulso' ? '' : 'none';
-  document.getElementById('btn-medir-bluetooth').style.display = BLE_PERFILES[_tipoMedicionSel] ? '' : 'none';
+  document.getElementById('med-valor1').value= medicion ? medicion.valor1 : '';
+  document.getElementById('med-valor2').value= medicion && medicion.valor2!=null ? medicion.valor2 : '';
+  document.getElementById('med-fecha').value= medicion ? fechaISODesdeTs(medicion.fecha) : fechaHoy();
+  document.getElementById('med-notas').value= medicion ? (medicion.notas||'') : '';
+  document.getElementById('btn-medir-camara').style.display = tipoKey==='pulso' ? '' : 'none';
+  document.getElementById('btn-medir-bluetooth').style.display = BLE_PERFILES[tipoKey] ? '' : 'none';
+  document.getElementById('btn-borrar-medicion').style.display = medicion ? '' : 'none';
   abrirModal('medicion');
 }
 async function guardarMedicion(){
   const v1=parseFloat(document.getElementById('med-valor1').value);
   if(isNaN(v1)){ toast('⚠️ Ingresá un valor válido'); return; }
-  const tipo=MEDICION_TIPOS[_tipoMedicionSel];
+  const tipoKey = _medicionEditandoId ? (DB.mediciones||[]).find(m=>m.id===_medicionEditandoId).tipo : _tipoMedicionSel;
+  const tipo=MEDICION_TIPOS[tipoKey];
   let v2=null;
   if(tipo.doble){
     v2=parseFloat(document.getElementById('med-valor2').value);
@@ -1397,14 +1515,28 @@ async function guardarMedicion(){
   }
   const fecha=document.getElementById('med-fecha').value;
   const notas=(document.getElementById('med-notas').value||'').trim();
-  const medicion={id:uid(), tipo:_tipoMedicionSel, valor1:v1, valor2:v2, fecha:new Date(fecha+'T12:00:00').getTime(), notas};
   if(!DB.mediciones) DB.mediciones=[];
-  DB.mediciones.push(medicion);
+  if(_medicionEditandoId){
+    const m=DB.mediciones.find(x=>x.id===_medicionEditandoId);
+    if(m){ m.valor1=v1; m.valor2=v2; m.fecha=new Date(fecha+'T12:00:00').getTime(); m.notas=notas; }
+  } else {
+    DB.mediciones.push({id:uid(), tipo:_tipoMedicionSel, valor1:v1, valor2:v2, fecha:new Date(fecha+'T12:00:00').getTime(), notas});
+  }
   await save();
   cerrarModal('medicion');
   renderCuerpo();
   if(_pagActual==='home') renderHome();
   toast('✅ Guardado');
+}
+async function borrarMedicionActual(){
+  if(!_medicionEditandoId) return;
+  if(!confirm('¿Eliminar esta medición?')) return;
+  DB.mediciones=(DB.mediciones||[]).filter(m=>m.id!==_medicionEditandoId);
+  await save();
+  cerrarModal('medicion');
+  renderCuerpo();
+  if(_pagActual==='home') renderHome();
+  toast('🗑 Eliminada');
 }
 
 // ═══════════════════════════════════════════════════════════════
@@ -1586,6 +1718,15 @@ function _leerFLOAT32(dv, offset){
   return mantissa*Math.pow(10,exponente);
 }
 const BLE_PERFILES={
+  peso:{
+    servicio:'weight_scale', caracteristica:'weight_measurement',
+    parse: dv=>{
+      const flags=dv.getUint8(0);
+      const raw=dv.getUint16(1,true);
+      const kg = (flags & 0x1) ? (raw*0.01)*0.453592 : raw*0.005; // el aparato mide en libras o en kg segun el flag
+      return {valor1:Math.round(kg*10)/10, valor2:null};
+    }
+  },
   pulso:{
     servicio:'heart_rate', caracteristica:'heart_rate_measurement',
     parse: dv=>{
@@ -1679,7 +1820,7 @@ function _desconectarBluetooth(){
 // NUTRICION — comidas, dietas, hidratación
 // ═══════════════════════════════════════════════════════════════
 function comidaRowHtml(c){
-  return '<div class="row-item static"><div class="row-icon" style="background:rgba(16,185,129,.15)">🍽️</div><div class="row-main"><div class="row-title">'+esc(c.descripcion)+'</div><div class="row-sub">'+fmtFecha(c.fecha)+' · '+c.tipo+(c.calorias?' · '+c.calorias+' kcal':'')+'</div></div></div>';
+  return '<div class="row-item" onclick="abrirModalComida(\''+c.id+'\')"><div class="row-icon" style="background:rgba(16,185,129,.15)">🍽️</div><div class="row-main"><div class="row-title">'+esc(c.descripcion)+'</div><div class="row-sub">'+fmtFecha(c.fecha)+' · '+c.tipo+(c.calorias?' · '+c.calorias+' kcal':'')+'</div></div></div>';
 }
 function renderNutricion(){
   const hoy=fechaHoy();
@@ -1716,24 +1857,42 @@ function renderComidaTipoPills(){
     '<button type="button" class="pill '+(id===_tipoComidaSel?'sel':'')+'" onclick="_tipoComidaSel=\''+id+'\';renderComidaTipoPills()">'+label+'</button>'
   ).join('');
 }
-function abrirModalComida(){
-  _tipoComidaSel='desayuno';
+let _comidaEditandoId=null;
+function abrirModalComida(id){
+  const comida = id ? (DB.comidas||[]).find(c=>c.id===id) : null;
+  _comidaEditandoId = id || null;
+  _tipoComidaSel = comida ? comida.tipo : 'desayuno';
   renderComidaTipoPills();
-  document.getElementById('comida-desc').value='';
-  document.getElementById('comida-cal').value='';
+  document.getElementById('comida-modal-titulo').textContent = comida ? 'Editar comida' : '+ Registrar comida';
+  document.getElementById('comida-desc').value= comida ? comida.descripcion : '';
+  document.getElementById('comida-cal').value= comida && comida.calorias!=null ? comida.calorias : '';
+  document.getElementById('btn-borrar-comida').style.display = comida ? '' : 'none';
   abrirModal('comida');
 }
 async function guardarComida(){
   const desc=(document.getElementById('comida-desc').value||'').trim();
   if(!desc){ toast('⚠️ Ingresá una descripción'); return; }
   const cal=parseFloat(document.getElementById('comida-cal').value);
-  const comida={id:uid(), tipo:_tipoComidaSel, descripcion:desc, calorias:isNaN(cal)?null:cal, fecha:fechaHoy(), creadoEn:Date.now()};
   if(!DB.comidas) DB.comidas=[];
-  DB.comidas.push(comida);
+  if(_comidaEditandoId){
+    const c=DB.comidas.find(x=>x.id===_comidaEditandoId);
+    if(c){ c.tipo=_tipoComidaSel; c.descripcion=desc; c.calorias=isNaN(cal)?null:cal; }
+  } else {
+    DB.comidas.push({id:uid(), tipo:_tipoComidaSel, descripcion:desc, calorias:isNaN(cal)?null:cal, fecha:fechaHoy(), creadoEn:Date.now()});
+  }
   await save();
   cerrarModal('comida');
   renderNutricion();
   toast('✅ Guardado');
+}
+async function borrarComidaActual(){
+  if(!_comidaEditandoId) return;
+  if(!confirm('¿Eliminar esta comida?')) return;
+  DB.comidas=(DB.comidas||[]).filter(c=>c.id!==_comidaEditandoId);
+  await save();
+  cerrarModal('comida');
+  renderNutricion();
+  toast('🗑 Eliminada');
 }
 function abrirModalDieta(){ document.getElementById('dieta-nombre').value=''; document.getElementById('dieta-notas').value=''; abrirModal('dieta'); }
 async function guardarDieta(){
@@ -1824,6 +1983,55 @@ async function borrarRutinaActual(){
 }
 
 // ═══════════════════════════════════════════════════════════════
+// RECORDATORIOS (avisos) — mientras la app esté abierta (aunque sea en otra pestaña),
+// revisa cada 20s si algún aviso coincide con la hora actual y dispara una notificación
+// del sistema (si hay permiso) + un toast. No hay forma de avisar con el celular
+// bloqueado o la app cerrada del todo sin un servidor propio (push real) — eso no está
+// construido, ver el aviso que se muestra en la pantalla de Agenda.
+// ═══════════════════════════════════════════════════════════════
+let _avisosChecker=null;
+let _avisosDisparadosHoy={};
+function _horaActualHHMM(){ const d=new Date(); return String(d.getHours()).padStart(2,'0')+':'+String(d.getMinutes()).padStart(2,'0'); }
+async function _dispararAviso(aviso){
+  toast('⏰ '+aviso.texto);
+  if(typeof Notification==='undefined' || Notification.permission!=='granted') return;
+  try{
+    if('serviceWorker' in navigator){
+      const reg=await navigator.serviceWorker.ready;
+      reg.showNotification('⏰ Frigurso Salud', {body:aviso.texto, icon:'icon-192.png', tag:'aviso-'+aviso.id});
+    } else {
+      new Notification('⏰ Frigurso Salud', {body:aviso.texto, icon:'icon-192.png'});
+    }
+  }catch(e){}
+}
+function _revisarAvisos(){
+  if(!DB || !DB.avisos || !DB.avisos.length) return;
+  const hoy=fechaHoy(), horaActual=_horaActualHHMM();
+  DB.avisos.forEach(aviso=>{
+    const clave=hoy+'_'+aviso.id;
+    if(aviso.hora===horaActual && !_avisosDisparadosHoy[clave]){
+      _avisosDisparadosHoy[clave]=true;
+      _dispararAviso(aviso);
+    }
+  });
+}
+function iniciarCheckeoAvisos(){
+  if(_avisosChecker) return;
+  _revisarAvisos();
+  _avisosChecker=setInterval(_revisarAvisos, 20000);
+}
+function detenerCheckeoAvisos(){
+  if(_avisosChecker){ clearInterval(_avisosChecker); _avisosChecker=null; }
+  _avisosDisparadosHoy={};
+}
+async function _pedirPermisoNotificaciones(){
+  if(typeof Notification==='undefined') return;
+  if(Notification.permission==='default'){
+    try{ await Notification.requestPermission(); }catch(e){}
+  }
+}
+
+// ═══════════════════════════════════════════════════════════════
 // AGENDA — turnos médicos + avisos
 // ═══════════════════════════════════════════════════════════════
 function turnoRowHtml(t){
@@ -1894,6 +2102,7 @@ async function guardarAviso(){
   cerrarModal('aviso');
   renderAgenda();
   toast('✅ Aviso creado');
+  _pedirPermisoNotificaciones();
 }
 async function borrarAviso(id){
   DB.avisos=(DB.avisos||[]).filter(a=>a.id!==id);
