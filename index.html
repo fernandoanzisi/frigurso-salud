@@ -109,6 +109,16 @@
   .chart-canvas-wrap{background:var(--bg3);border-radius:14px;padding:8px;margin-bottom:10px}
 
   #ptr-indicator{position:fixed;top:8px;left:50%;transform:translate(-50%,-40px);opacity:0;z-index:150;width:36px;height:36px;border-radius:50%;background:var(--card);border:1px solid var(--border);box-shadow:var(--shadow);display:flex;align-items:center;justify-content:center;font-size:16px;transition:transform .25s,opacity .25s;pointer-events:none}
+
+  .pulso-circulo-wrap{display:flex;justify-content:center;padding:8px 0 2px}
+  .pulso-circulo{position:relative;width:180px;height:180px;border-radius:50%;overflow:hidden;background:var(--bg3);border:3px solid var(--border)}
+  .pulso-circulo video{position:absolute;inset:0;width:100%;height:100%;object-fit:cover;opacity:0;transition:opacity .3s}
+  .pulso-circulo.activo video{opacity:1}
+  .pulso-circulo-icono{position:absolute;inset:0;display:flex;align-items:center;justify-content:center;font-size:56px;opacity:.55;pointer-events:none;transition:opacity .3s}
+  .pulso-circulo.activo .pulso-circulo-icono{opacity:0}
+  .pulso-anillo{position:absolute;inset:-3px;border-radius:50%;border:3px solid var(--accent);opacity:0;pointer-events:none}
+  .pulso-circulo.midiendo .pulso-anillo{animation:pulso-latido 1.1s ease-out infinite}
+  @keyframes pulso-latido{0%{transform:scale(.94);opacity:.9}100%{transform:scale(1.16);opacity:0}}
 </style>
 </head>
 <body>
@@ -490,11 +500,17 @@
   <div class="modal">
     <div class="modal-title">📷 Medir pulso con la cámara</div>
     <div class="card" style="font-size:12px;color:var(--text3);margin-bottom:12px">Apoyá la yema del dedo tapando bien la cámara trasera (y el flash si tiene). Quedate quieto durante toda la medición.</div>
-    <div style="display:flex;align-items:center;justify-content:center;padding:16px 0">
-      <div id="pulso-camara-bpm" style="font-size:52px;font-weight:900;font-family:var(--mono);color:var(--accent)">--</div>
+    <div class="pulso-circulo-wrap">
+      <div class="pulso-circulo" id="pulso-circulo">
+        <video id="pulso-camara-video" playsinline muted></video>
+        <div class="pulso-circulo-icono">👆</div>
+        <div class="pulso-anillo"></div>
+      </div>
+    </div>
+    <div style="display:flex;align-items:center;justify-content:center;padding:10px 0 2px">
+      <div id="pulso-camara-bpm" style="font-size:44px;font-weight:900;font-family:var(--mono);color:var(--accent)">--</div>
     </div>
     <div id="pulso-camara-estado" style="text-align:center;font-size:12px;color:var(--text3);margin-bottom:14px">Tocá "Iniciar" para empezar</div>
-    <video id="pulso-camara-video" playsinline muted style="display:none"></video>
     <canvas id="pulso-camara-canvas" style="display:none"></canvas>
     <button class="btn-primary" id="btn-iniciar-medicion-camara" onclick="iniciarMedicionCamara()">▶️ Iniciar</button>
     <button class="btn-primary" id="btn-usar-medicion-camara" style="display:none" onclick="usarResultadoCamara()">✅ Usar este valor</button>
@@ -1552,6 +1568,8 @@ function abrirMedicionCamara(destino){
   document.getElementById('pulso-camara-estado').textContent='Tocá "Iniciar" para empezar';
   document.getElementById('btn-iniciar-medicion-camara').style.display='';
   document.getElementById('btn-usar-medicion-camara').style.display='none';
+  const circulo=document.getElementById('pulso-circulo');
+  if(circulo) circulo.classList.remove('activo','midiendo');
   _pulsoCamaraResultado=null;
   abrirModal('pulso-camara');
 }
@@ -1562,6 +1580,19 @@ function cerrarModalCamara(){
 function _detenerCamaraPulso(){
   if(_pulsoCamaraRAF){ cancelAnimationFrame(_pulsoCamaraRAF); _pulsoCamaraRAF=null; }
   if(_pulsoCamaraStream){ _pulsoCamaraStream.getTracks().forEach(t=>t.stop()); _pulsoCamaraStream=null; }
+  const circulo=document.getElementById('pulso-circulo');
+  if(circulo) circulo.classList.remove('activo','midiendo');
+}
+// distingue el motivo real del fallo de getUserMedia en vez de un unico mensaje generico —
+// asi Fernando (o quien sea) puede saber si es un permiso negado, que no hay camara, que esta
+// ocupada por otra app, o que el navegador no pudo satisfacer facingMode:environment
+function _mensajeErrorCamara(e){
+  const nombre=e && e.name;
+  if(nombre==='NotAllowedError' || nombre==='PermissionDeniedError') return '⚠️ Le negaste el permiso de cámara a la app — activalo en la configuración del navegador (ícono de candado en la barra de direcciones) y volvé a intentar.';
+  if(nombre==='NotFoundError' || nombre==='DevicesNotFoundError') return '⚠️ No se encontró ninguna cámara en este dispositivo.';
+  if(nombre==='NotReadableError' || nombre==='TrackStartError') return '⚠️ La cámara está siendo usada por otra app (o por otra pestaña) — cerrala e intentá de nuevo.';
+  if(nombre==='OverconstrainedError' || nombre==='ConstraintNotSatisfiedError') return '⚠️ No se pudo activar la cámara trasera en este dispositivo.';
+  return '⚠️ No se pudo acceder a la cámara — revisá los permisos del navegador.';
 }
 // Reintenta prender el flash (torch) del track de video varias veces con una pequeña
 // espera entre intentos, porque en muchos Android las capabilities del track no estan
@@ -1590,12 +1621,14 @@ async function iniciarMedicionCamara(){
   try{
     _pulsoCamaraStream=await navigator.mediaDevices.getUserMedia({video:{facingMode:{ideal:'environment'}}});
   }catch(e){
-    toast('⚠️ No se pudo acceder a la cámara — revisá los permisos del navegador');
+    toast(_mensajeErrorCamara(e));
     return;
   }
   const video=document.getElementById('pulso-camara-video');
   video.srcObject=_pulsoCamaraStream;
   try{ await video.play(); }catch(e){}
+  const circulo=document.getElementById('pulso-circulo');
+  if(circulo) circulo.classList.add('activo');
   // intentamos prender el flash (torch) — mejora mucho la lectura, pero no todos los
   // celulares/navegadores lo permiten (en iOS Safari no se puede en absoluto). Ademas,
   // en varios Android las "capabilities" del track vienen vacias si se consultan apenas
@@ -1606,6 +1639,7 @@ async function iniciarMedicionCamara(){
   if(!flashOk) toast('💡 Este dispositivo no permite prender el flash automáticamente — medimos igual con luz ambiente, buscá un lugar con buena luz');
 
   btnIniciar.style.display='none';
+  if(circulo) circulo.classList.add('midiendo');
   _pulsoCamaraMuestras=[];
   _pulsoCamaraInicio=performance.now();
   estadoEl.textContent='Midiendo... quedate quieto';
